@@ -1,0 +1,119 @@
+.issues-filters
+  .issues-state-filters
+    %ul.nav.nav-tabs
+      %li{class: ("active" if params[:state] == 'opened')}
+        = link_to page_filter_path(state: 'opened') do
+          %i.fa.fa-exclamation-circle
+          Открыт
+      %li{class: ("active" if params[:state] == 'closed')}
+        = link_to page_filter_path(state: 'closed') do
+          %i.fa.fa-check-circle
+          Закрыт
+      %li{class: ("active" if params[:state] == 'all')}
+        = link_to page_filter_path(state: 'all') do
+          %i.fa.fa-compass
+          Все
+
+  %div
+    - if controller.controller_name == 'issues'
+      .check-all-holder
+        = check_box_tag "check_all_issues", nil, false,
+          class: "check_all_issues left",
+          disabled: !can?(current_user, :modify_issue, @project)
+    .issues-other-filters
+      .dropdown.inline.assignee-filter
+        %button.dropdown-toggle.btn{type: 'button', "data-toggle" => "dropdown"}
+          %i.fa.fa-user
+          %span.light предназначен:
+          - if @assignee.present?
+            %strong= @assignee.name
+          - elsif params[:assignee_id] == "0"
+            Неопределенно
+          - else
+            Любому
+          %b.caret
+        %ul.dropdown-menu
+          %li
+            = link_to page_filter_path(assignee_id: nil) do
+              Любому
+            = link_to page_filter_path(assignee_id: 0) do
+              Неопределенно
+          - @assignees.sort_by(&:name).each do |user|
+            %li
+              = link_to page_filter_path(assignee_id: user.id) do
+                = image_tag avatar_icon(user.email), class: "avatar s16", alt: ''
+                = user.name
+
+      .dropdown.inline.prepend-left-10.author-filter
+        %button.dropdown-toggle.btn{type: 'button', "data-toggle" => "dropdown"}
+          %i.fa.fa-user
+          %span.light автор:
+          - if @author.present?
+            %strong= @author.name
+          - elsif params[:author_id] == "0"
+            Неопределенно
+          - else
+            Любой
+          %b.caret
+        %ul.dropdown-menu
+          %li
+            = link_to page_filter_path(author_id: nil) do
+              Любой
+            = link_to page_filter_path(author_id: 0) do
+              Неопределенно
+          - @authors.sort_by(&:name).each do |user|
+            %li
+              = link_to page_filter_path(author_id: user.id) do
+                = image_tag avatar_icon(user.email), class: "avatar s16", alt: ''
+                = user.name
+
+      .dropdown.inline.prepend-left-10.milestone-filter
+        %button.dropdown-toggle.btn{type: 'button', "data-toggle" => "dropdown"}
+          %i.fa.fa-clock-o
+          %span.light итерация:
+          - if @milestone.present?
+            %strong= @milestone.title
+          - elsif params[:milestone_id] == "0"
+            Нет (backlog)
+          - else
+            Любая
+          %b.caret
+        %ul.dropdown-menu
+          %li
+            = link_to page_filter_path(milestone_id: nil) do
+              Любая
+            = link_to page_filter_path(milestone_id: 0) do
+              Нет (backlog)
+          - @milestones.each do |milestone|
+            %li
+              = link_to page_filter_path(milestone_id: milestone.id) do
+                %strong= milestone.title
+                %small.light= milestone.expires_at
+
+      - if @project
+        .dropdown.inline.prepend-left-10.labels-filter
+          %button.dropdown-toggle.btn{type: 'button', "data-toggle" => "dropdown"}
+            %i.fa.fa-tags
+            %span.light метка:
+            - if params[:label_name].present?
+              %strong= params[:label_name]
+            - else
+              Любая
+            %b.caret
+          %ul.dropdown-menu
+            %li
+              = link_to page_filter_path(label_name: nil) do
+                Любая
+            - if @project.labels.any?
+              - @project.labels.each do |label|
+                %li
+                  = link_to page_filter_path(label_name: label.name) do
+                    = render_colored_label(label)
+            - else
+              %li
+                = link_to generate_namespace_project_labels_path(@project.namespace, @project, redirect: request.original_url), method: :post do
+                  %i.fa.fa-plus-circle
+                  Создание метки по умолчанию
+
+      .pull-right
+        = render 'shared/sort_dropdown'

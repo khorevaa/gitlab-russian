@@ -1,0 +1,10 @@
+!!! 5
+%html{ lang: "en"}
+  = render "layouts/head", title: "Поиск"
+  %body{class: "#{app_theme}  application", :'data-page' => body_data_page}
+    = render "layouts/broadcast"
+    = render "layouts/head_panel", title: link_to("Поиск", search_path)
+    .container.navless-container
+      .content
+        = render "layouts/flash"
+        = yield

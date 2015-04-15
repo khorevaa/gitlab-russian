@@ -1,0 +1,11 @@
+.explore-trending-block
+  %p.lead
+    %i.fa.fa-comments-o
+    Самые обсуждаемые проекты за последний месяц
+  %hr
+  .public-projects
+    %ul.bordered-list
+      = render @trending_projects
+
+  .center
+    = link_to 'Показать все проекты', explore_projects_path, class: 'btn btn-primary'

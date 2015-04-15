@@ -1,0 +1,87 @@
+- if issuable.errors.any?
+  .row
+    .col-sm-10.col-sm-offset-2
+      .alert.alert-danger
+        - issuable.errors.full_messages.each do |msg|
+          %span= msg
+          %br
+.form-group
+  = f.label :title, class: 'control-label' do
+    %strong= 'Название *'
+  .col-sm-10
+    = f.text_field :title, maxlength: 255, autofocus: true,
+        class: 'form-control pad js-gfm-input', required: true
+.form-group.issuable-description
+  = f.label :description, 'Описание', class: 'control-label'
+  .col-sm-10
+
+    = render layout: 'projects/md_preview', locals: { preview_class: "wiki" } do
+      = render 'projects/zen', f: f, attr: :description,
+                               classes: 'description form-control'
+      .col-sm-12.hint
+        .pull-left
+          Форматирование текста
+          #{link_to 'GitLab Flavored Markdown', help_page_path('markdown', 'markdown'), target: '_blank'}.
+        .pull-right
+          Прикрепите файлы путем перетаскивания
+          или #{link_to 'выберите их', '#', class: 'markdown-selector' }.
+
+      .clearfix
+      .error-alert
+%hr
+.form-group
+  .issue-assignee
+    = f.label :assignee_id, class: 'control-label' do
+      %i.fa.fa-user
+      Предназначен
+    .col-sm-10
+      = project_users_select_tag("#{issuable.class.model_name.param_key}[assignee_id]",
+          placeholder: 'Выбрать пользователя', class: 'custom-form-control',
+          selected: issuable.assignee_id)
+      &nbsp;
+      = link_to 'Назначить меня', '#', class: 'btn assign-to-me-link'
+.form-group
+  .issue-milestone
+    = f.label :milestone_id, class: 'control-label' do
+      %i.fa.fa-clock-o
+      Итерация
+    .col-sm-10
+      - if milestone_options(issuable).present?
+        = f.select(:milestone_id, milestone_options(issuable),
+          { include_blank: 'Выберите итерацию' }, { class: 'select2' })
+      - else
+        .prepend-top-10
+        %span.light Нет доступных итераций.
+      &nbsp;
+      - if can? current_user, :admin_milestone, issuable.project
+        = link_to 'Создать новую итерацию', new_namespace_project_milestone_path(issuable.project.namespace, issuable.project), target: :blank
+.form-group
+  = f.label :label_ids, class: 'control-label' do
+    %i.fa.fa-tag
+    Метки
+  .col-sm-10
+    - if issuable.project.labels.any?
+      = f.collection_select :label_ids, issuable.project.labels.all, :id, :name,
+        { selected: issuable.label_ids }, multiple: true, class: 'select2'
+    - else
+      .prepend-top-10
+      %span.light Меток нет.
+    &nbsp;
+    - if can? current_user, :admin_label, issuable.project
+      = link_to 'Создать новую метку', new_namespace_project_label_path(issuable.project.namespace, issuable.project), target: :blank
+
+.form-actions
+  - if !issuable.project.empty_repo? && contribution_guide_url(issuable.project) && !issuable.persisted?
+    %p
+      Пожалуйста, ознакомьтесь с
+      %strong #{link_to 'guidelines for contribution', contribution_guide_url(issuable.project)}
+      этого репозитория.
+  - if issuable.new_record?
+    = f.submit "Отправить новый #{issuable.class.model_name.human.downcase}", class: 'btn btn-create'
+  - else
+    = f.submit 'Сохранить изменения', class: 'btn btn-save'
+  - if issuable.new_record?
+    - cancel_project = issuable.source_project
+  - else
+    - cancel_project = issuable.project
+  = link_to 'Отмена', [cancel_project.namespace.becomes(Namespace), cancel_project, issuable], class: 'btn btn-cancel'

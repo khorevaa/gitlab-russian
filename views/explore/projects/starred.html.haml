@@ -1,0 +1,10 @@
+.explore-trending-block
+  %p.lead
+    %i.fa.fa-star
+    Наиболее звёздные проекты
+  %hr
+  .public-projects
+    %ul.bordered-list
+      = render @starred_projects
+
+  = paginate @starred_projects, theme: 'gitlab'

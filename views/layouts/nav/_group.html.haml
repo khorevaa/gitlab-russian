@@ -1,0 +1,42 @@
+%ul.nav.nav-sidebar
+  = nav_link(path: 'groups#show', html_options: {class: 'home'}) do
+    = link_to group_path(@group), title: "Деятельность" do
+      %i.fa.fa-dashboard
+      %span
+        Деятельность
+  - if current_user
+    = nav_link(controller: [:group, :milestones]) do
+      = link_to group_milestones_path(@group), title: 'Итерации' do
+        %i.fa.fa-clock-o
+        %span
+          Итерации
+  = nav_link(path: 'groups#issues') do
+    = link_to issues_group_path(@group), title: 'Вопросы' do
+      %i.fa.fa-exclamation-circle
+      %span
+        Вопросы
+        - if current_user
+          %span.count= Issue.opened.of_group(@group).count
+  = nav_link(path: 'groups#merge_requests') do
+    = link_to merge_requests_group_path(@group), title: 'Запросы' do
+      %i.fa.fa-tasks
+      %span
+        Запросы
+        - if current_user
+          %span.count= MergeRequest.opened.of_group(@group).count
+  = nav_link(controller: [:group_members]) do
+    = link_to group_group_members_path(@group), title: 'Члены группы' do
+      %i.fa.fa-users
+      %span
+        Члены группы
+
+  - if can?(current_user, :manage_group, @group)
+    = nav_link(html_options: { class: "#{"active" if group_settings_page?} separate-item" }) do
+      = link_to edit_group_path(@group), title: 'Настройки', class: "tab no-highlight" do
+        %i.fa.fa-cogs
+        %span
+          Настройки
+          %i.fa.fa-angle-down
+
+  - if group_settings_page?
+    = render 'groups/settings_nav'

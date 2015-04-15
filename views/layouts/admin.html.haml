@@ -1,0 +1,6 @@
+!!! 5
+%html{ lang: "en"}
+  = render "layouts/head", title: "Админка"
+  %body{class: "#{app_theme}  admin", :'data-page' => body_data_page}
+    = render "layouts/head_panel", title: link_to("Админка", admin_root_path)
+    = render 'layouts/page', sidebar: 'layouts/nav/admin'

@@ -1,0 +1,10 @@
+%h3.page-title
+  Вопросы
+
+%p.light
+  Список всех вопросов из всех проектов, к которым у вас есть доступ.
+%hr
+
+.append-bottom-20
+  = render 'shared/issuable_filter'
+= render 'shared/issues'

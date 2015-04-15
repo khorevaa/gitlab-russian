@@ -1,0 +1,38 @@
+%ul.nav.nav-sidebar
+  = nav_link(path: 'dashboard#show', html_options: {class: 'home'}) do
+    = link_to root_path, title: 'Ваши проекты', class: 'shortcuts-activity' do
+      %i.fa.fa-dashboard
+      %span
+        Ваши проекты
+  = nav_link(path: 'projects#starred') do
+    = link_to starred_dashboard_projects_path, title: 'Избранные проекты' do
+      %i.fa.fa-star
+      %span
+        Избранные проекты
+  = nav_link(controller: :groups) do
+    = link_to dashboard_groups_path, title: 'Группы' do
+      %i.fa.fa-group
+      %span
+        Группы
+  = nav_link(controller: :milestones) do
+    = link_to dashboard_milestones_path, title: 'Итерации' do
+      %i.fa.fa-clock-o
+      %span
+        Итерации
+  = nav_link(path: 'dashboard#issues') do
+    = link_to assigned_issues_dashboard_path, title: 'Вопросы', class: 'shortcuts-issues' do
+      %i.fa.fa-exclamation-circle
+      %span
+        Вопросы
+        %span.count= current_user.assigned_issues.opened.count
+  = nav_link(path: 'dashboard#merge_requests') do
+    = link_to assigned_mrs_dashboard_path, title: 'Запросы', class: 'shortcuts-merge_requests' do
+      %i.fa.fa-tasks
+      %span
+        Запросы
+        %span.count= current_user.assigned_merge_requests.opened.count
+  = nav_link(controller: :help) do
+    = link_to help_path, title: 'Помощь' do
+      %i.fa.fa-question-circle
+      %span
+        Помощь

@@ -1,0 +1,6 @@
+/**
+ * Modern GitLab UI theme
+ */
+.ui_modern {
+  @include dark-theme(#ADC, #019875, #018865, #017855);
+}

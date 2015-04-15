@@ -1,0 +1,17 @@
+%h3.page-title
+  Публичные сниппеты
+
+  .pull-right
+    
+    - if current_user
+      = link_to new_snippet_path, class: "btn btn-new btn-grouped", title: "New Snippet" do
+        Добавить новый сниппет
+      = link_to user_snippets_path(current_user), class: "btn btn-grouped"  do
+        Мои сниппеты
+
+%p.light
+  Здесь перечислены публичные сниппеты, созданные вами и другими пользователями
+
+%hr
+= render 'snippets'
+

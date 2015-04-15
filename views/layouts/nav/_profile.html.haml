@@ -1,0 +1,50 @@
+%ul.nav.nav-sidebar
+  = nav_link(path: 'profiles#show', html_options: {class: 'home'}) do
+    = link_to profile_path, title: "Профиль" do
+      %i.fa.fa-user
+      %span
+        Профиль
+  = nav_link(controller: :accounts) do
+    = link_to profile_account_path, title: 'Аккаунт' do
+      %i.fa.fa-gear
+      %span
+        Аккаунт
+  = nav_link(path: ['profiles#applications', 'applications#edit', 'applications#show', 'applications#new']) do
+    = link_to applications_profile_path, title: 'Приложения' do
+      %i.fa.fa-cloud
+      %span
+        Приложения
+  = nav_link(controller: :emails) do
+    = link_to profile_emails_path, title: 'Электропочта' do
+      %i.fa.fa-envelope-o
+      %span
+        Электропочта
+        %span.count= current_user.emails.count + 1
+  - unless current_user.ldap_user?
+    = nav_link(controller: :passwords) do
+      = link_to edit_profile_password_path, title: 'Пароль' do
+        %i.fa.fa-lock
+        %span
+          Пароль
+  = nav_link(controller: :notifications) do
+    = link_to profile_notifications_path, title: 'Уведомления' do
+      %i.fa.fa-inbox
+      %span
+        Уведомления
+
+  = nav_link(controller: :keys) do
+    = link_to profile_keys_path, title: 'SSH ключи' do
+      %i.fa.fa-key
+      %span
+        SSH ключи
+        %span.count= current_user.keys.count
+  = nav_link(path: 'profiles#design') do
+    = link_to design_profile_path, title: 'Дизайн' do
+      %i.fa.fa-image
+      %span
+        Дизайн
+  = nav_link(path: 'profiles#history') do
+    = link_to history_profile_path, title: 'История' do
+      %i.fa.fa-history
+      %span
+        История

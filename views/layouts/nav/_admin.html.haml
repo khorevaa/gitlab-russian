@@ -1,0 +1,60 @@
+%ul.nav.nav-sidebar
+  = nav_link(controller: :dashboard, html_options: {class: 'home'}) do
+    = link_to admin_root_path, title: "Статистика" do
+      %i.fa.fa-dashboard
+      %span
+        Обзор
+  = nav_link(controller: :projects) do
+    = link_to admin_namespaces_projects_path, title: 'Проекты' do
+      %i.fa.fa-cube
+      %span
+        Проекты
+  = nav_link(controller: :users) do
+    = link_to admin_users_path, title: 'Пользователи' do
+      %i.fa.fa-user
+      %span
+        Пользователи
+  = nav_link(controller: :groups) do
+    = link_to admin_groups_path, title: 'Группы' do
+      %i.fa.fa-group
+      %span
+        Группы
+  = nav_link(controller: :logs) do
+    = link_to admin_logs_path, title: 'Журналы' do
+      %i.fa.fa-file-text
+      %span
+        Журналы
+  = nav_link(controller: :broadcast_messages) do
+    = link_to admin_broadcast_messages_path, title: 'Сообщения' do
+      %i.fa.fa-bullhorn
+      %span
+        Сообщения
+  = nav_link(controller: :hooks) do
+    = link_to admin_hooks_path, title: 'Хуки' do
+      %i.fa.fa-external-link
+      %span
+        Хуки
+  = nav_link(controller: :background_jobs) do
+    = link_to admin_background_jobs_path, title: 'Фоновые задания' do
+      %i.fa.fa-cog
+      %span
+        Фоновые задания
+
+  = nav_link(controller: :applications) do
+    = link_to admin_applications_path, title: 'Приложения' do
+      %i.fa.fa-cloud
+      %span
+        Приложения
+
+  = nav_link(controller: :services) do
+    = link_to admin_application_settings_services_path, title: 'Шаблоны служб' do
+      %i.fa.fa-copy
+      %span
+        Шаблоны служб
+
+  = nav_link(controller: :application_settings, html_options: { class: 'separate-item'}) do
+    = link_to admin_application_settings_path, title: 'Настройки' do
+      %i.fa.fa-cogs
+      %span
+        Настройки
+
