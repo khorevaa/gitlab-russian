@@ -1,9 +1,9 @@
 %h3.page-title
-  Интерации
+  Итерации
   %span.pull-right #{@dashboard_milestones.count} milestones
 
 %p.light
-  Список всех интераций всех проектов, которым у вас есть доступ.
+  Список всех итераций всех проектов, которым у вас есть доступ.
 
 %hr
 
@@ -13,7 +13,7 @@
     %ul.well-list
       - if @dashboard_milestones.blank?
         %li
-          .nothing-here-block Нет интерации для показа
+          .nothing-here-block Нет итерации для показа
       - else
         - @dashboard_milestones.each do |milestone|
           %li{class: "milestone milestone-#{milestone.closed? ? 'closed' : 'open'}", id: dom_id(milestone.milestones.first) }
