@@ -3,18 +3,20 @@
     GitLab
     %span= Gitlab::VERSION
     %small= Gitlab::REVISION
+    - if current_application_settings.version_check_enabled
+      = version_status_badge
   %p.slead
-    GitLab is open source software to collaborate on code.
+    GitLab является программным обеспечением с открытым исходным кодом для совместной работы над кодом.
     %br
-    Manage git repositories with fine grained access controls that keep your code secure.
+    Управление git репозиториями с настраиваемым контролем доступа, содержащее ваш код в безопасности.
     %br
-    Perform code reviews and enhance collaboration with merge requests.
+    Позволяет выполять анализ кода и расширять функционал с помошью сотрудничество, использя запросы слияния.
     %br
-    Each project can also have an issue tracker and a wiki.
+    Каждый проект может имеет возможность отслеживания кода и вики.
     %br
-    Used by more than 100,000 organizations, GitLab is the most popular solution to manage git repositories on-premises.
+    GitLab используется в более чем 100 000 организаций, как наиболее популярное решения для управления локальными репозиториями git.
     %br
-    Read more about GitLab at #{link_to promo_host, promo_url, target: '_blank'}.
+    Узнайте больше о GitLab в #{link_to promo_host, promo_url, target: '_blank'}.
 
 %hr
 

@@ -28,16 +28,15 @@
     .file-stats .deleted-file {
       color: #B00;
     }
-    #{add_email_highlight_css}
   %body
     %div.content
       = yield
     %div.footer{style: "margin-top: 10px;"}
       %p
-        \—
+        &mdash;
         %br
         - if @target_url
-          #{link_to "Посмотреть в GitLab", @target_url}
+          #{link_to "View it on GitLab", @target_url}
           = email_action @target_url
         - if @project && !@disable_footer
-          Вы получили это уведомление потому, что вы являетесь членом #{link_to_unless @target_url, @project.name_with_namespace, namespace_project_url(@project.namespace, @project)} project team.
+          You're receiving this notification because you are a member of the #{link_to_unless @target_url, @project.name_with_namespace, namespace_project_url(@project.namespace, @project)} project team.

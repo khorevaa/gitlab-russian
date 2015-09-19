@@ -1,6 +1,4 @@
-class Profiles::EmailsController < ApplicationController
-  layout "profile"
-
+class Profiles::EmailsController < Profiles::ApplicationController
   def index
     @primary = current_user.email
     @emails = current_user.emails
@@ -9,7 +7,11 @@ class Profiles::EmailsController < ApplicationController
   def create
     @email = current_user.emails.new(email_params)
 
-    flash[:alert] = @email.errors.full_messages.first unless @email.save
+    if @email.save
+      NotificationService.new.new_email(@email)
+    else
+      flash[:alert] = @email.errors.full_messages.first
+    end
 
     redirect_to profile_emails_url
   end
@@ -18,8 +20,7 @@ class Profiles::EmailsController < ApplicationController
     @email = current_user.emails.find(params[:id])
     @email.destroy
 
-    current_user.set_notification_email
-    current_user.save if current_user.notification_email_changed?
+    current_user.update_secondary_emails!
 
     respond_to do |format|
       format.html { redirect_to profile_emails_url }

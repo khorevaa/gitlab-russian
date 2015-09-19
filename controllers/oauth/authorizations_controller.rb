@@ -1,6 +1,7 @@
 class Oauth::AuthorizationsController < Doorkeeper::AuthorizationsController
-  before_filter :authenticate_resource_owner!
-  layout "profile"
+  before_action :authenticate_resource_owner!
+
+  layout 'profile'
 
   def new
     if pre_auth.authorizable?

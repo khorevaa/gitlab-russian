@@ -19,7 +19,7 @@
     &.affix {
       position: fixed;
       top: 70px;
-      width: 220px;
+      margin-right: 35px;
     }
   }
 }
@@ -44,4 +44,10 @@
   font-size: 13px;
 
   .btn { font-size: 13px; }
+}
+
+.issuable-details {
+  .description {
+    max-width: $readable-width;
+  }
 }

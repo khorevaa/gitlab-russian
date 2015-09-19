@@ -1,15 +1,17 @@
+- page_title    'New Project'
+- header_title  'New Project'
 .project-edit-container
   .project-edit-errors
     = render 'projects/errors'
   .project-edit-content
 
-    = form_for @project, html: { class: 'new_project form-horizontal' } do |f|
+    = form_for @project, html: { class: 'new_project form-horizontal js-requires-input' } do |f|
       .form-group.project-name-holder
         = f.label :path, class: 'control-label' do
           %strong Project path
         .col-sm-10
           .input-group
-            = f.text_field :path, placeholder: "my-awesome-project", class: "form-control", tabindex: 1, autofocus: true
+            = f.text_field :path, placeholder: "my-awesome-project", class: "form-control", tabindex: 1, autofocus: true, required: true
             .input-group-addon
               \.git
 
@@ -21,64 +23,69 @@
             = f.select :namespace_id, namespaces_options(params[:namespace_id] || :current_user), {}, {class: 'select2', tabindex: 2}
 
       %hr
-      .js-toggle-container
+
+      .project-import.js-toggle-container
         .form-group
-          .col-sm-2
+          %label.control-label Import project from
           .col-sm-10
-            = link_to "#", class: 'js-toggle-button' do
-              %i.fa.fa-upload
-              %span Import existing repository by URL
+            - if github_import_enabled?
+              = link_to status_import_github_path, class: 'btn' do
+                %i.fa.fa-github
+                GitHub
+            - else
+              = link_to '#', class: 'how_to_import_link light btn' do
+                %i.fa.fa-github
+                GitHub
+              = render 'github_import_modal'
+
+
+            - if bitbucket_import_enabled?
+              = link_to status_import_bitbucket_path, class: 'btn', "data-no-turbolink" => "true" do
+                %i.fa.fa-bitbucket
+                Bitbucket
+            - else
+              = link_to '#', class: 'how_to_import_link light btn' do
+                %i.fa.fa-bitbucket
+                Bitbucket
+              = render 'bitbucket_import_modal'
+
+            - unless request.host == 'gitlab.com'
+              - if gitlab_import_enabled?
+                = link_to status_import_gitlab_path, class: 'btn' do
+                  %i.fa.fa-heart
+                  GitLab.com
+              - else
+                = link_to '#', class: 'how_to_import_link light btn' do
+                  %i.fa.fa-heart
+                  GitLab.com
+                = render 'gitlab_import_modal'
+
+            = link_to new_import_gitorious_path, class: 'btn' do
+              %i.icon-gitorious.icon-gitorious-small
+              Gitorious.org
+
+            = link_to new_import_google_code_path, class: 'btn' do
+              %i.fa.fa-google
+              Google Code
+
+            = link_to "#", class: 'btn js-toggle-button' do
+              %i.fa.fa-git
+              %span Any repo by URL
+
         .js-toggle-content.hide
           .form-group.import-url-data
             = f.label :import_url, class: 'control-label' do
-              %span Import existing git repo
+              %span Git repository URL
             .col-sm-10
-              = f.text_field :import_url, class: 'form-control', placeholder: 'https://github.com/randx/six.git'
-              .alert.alert-info.prepend-top-10
-                This URL must be publicly accessible or you can add a username and password like this: https://username:password@gitlab.com/company/project.git.
-                %br
-                The import will time out after 4 minutes. For big repositories, use a clone/push combination.
-                For SVN repositories, check #{link_to "this migrating from SVN doc.", "http://doc.gitlab.com/ce/workflow/migrating_from_svn.html"}
-
-
-      .project-import.form-group
-        %label.control-label Import projects from
-        .col-sm-10
-          - if github_import_enabled?
-            = link_to status_import_github_path, class: 'btn' do
-              %i.fa.fa-github
-              GitHub
-          - else
-            = link_to '#', class: 'how_to_import_link light btn' do
-              %i.fa.fa-github
-              GitHub
-            = render 'github_import_modal'
-
-
-          - if bitbucket_import_enabled?
-            = link_to status_import_bitbucket_path, class: 'btn' do
-              %i.fa.fa-bitbucket
-              Bitbucket
-          - else
-            = link_to '#', class: 'how_to_import_link light btn' do
-              %i.fa.fa-bitbucket
-              Bitbucket
-            = render 'bitbucket_import_modal'
-
-          - unless request.host == 'gitlab.com'
-            - if gitlab_import_enabled?
-              = link_to status_import_gitlab_path, class: 'btn' do
-                %i.fa.fa-heart
-                GitLab.com
-            - else
-              = link_to '#', class: 'how_to_import_link light btn' do
-                %i.fa.fa-heart
-                GitLab.com
-              = render 'gitlab_import_modal'
-
-          = link_to new_import_gitorious_path, class: 'btn' do
-            %i.icon-gitorious.icon-gitorious-small
-            Gitorious.org
+              = f.text_field :import_url, class: 'form-control', placeholder: 'https://username:password@gitlab.company.com/group/project.git'
+              .well.prepend-top-20
+                %ul
+                  %li
+                    The repository must be accessible over HTTP(S). If it is not publicly accessible, you can add authentication information to the URL: <code>https://username:password@gitlab.company.com/group/project.git</code>.
+                  %li
+                    The import will time out after 4 minutes. For big repositories, use a clone/push combination.
+                  %li
+                    To migrate an SVN repository, check out #{link_to "this document", "http://doc.gitlab.com/ce/workflow/importing/migrating_from_svn.html"}.
 
       %hr.prepend-botton-10
 
@@ -88,7 +95,7 @@
           %span.light (optional)
         .col-sm-10
           = f.text_area :description, placeholder: "Awesome project", class: "form-control", rows: 3, maxlength: 250, tabindex: 3
-      = render "visibility_level", f: f, visibility_level: gitlab_config.default_projects_features.visibility_level, can_change_visibility_level: true
+      = render 'shared/visibility_level', f: f, visibility_level: default_project_visibility, can_change_visibility_level: true, form_model: @project
 
       .form-actions
         = f.submit 'Create project', class: "btn btn-create project-submit", tabindex: 4
@@ -108,9 +115,8 @@
     %p Please wait a moment, this page will automatically refresh when ready.
 
 :coffeescript
-  $ ->
-    $('.how_to_import_link').bind 'click', (e) ->
-      e.preventDefault()
-      import_modal = $(this).next(".modal").show()
-    $('.modal-header .close').bind 'click', ->
-      $(".modal").hide()
+  $('.how_to_import_link').bind 'click', (e) ->
+    e.preventDefault()
+    import_modal = $(this).next(".modal").show()
+  $('.modal-header .close').bind 'click', ->
+    $(".modal").hide()

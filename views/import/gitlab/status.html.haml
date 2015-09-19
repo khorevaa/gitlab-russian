@@ -1,3 +1,4 @@
+- page_title "GitLab.com import"
 %h3.page-title
   %i.fa.fa-heart
   Import projects from GitLab.com
@@ -42,5 +43,4 @@
           = button_tag "Import", class: "btn js-add-to-import"
 
 :coffeescript
-  $ ->
-    new ImporterStatus("#{jobs_import_gitlab_path}", "#{import_gitlab_path}")
+  new ImporterStatus("#{jobs_import_gitlab_path}", "#{import_gitlab_path}")

@@ -21,23 +21,24 @@
 #  import_url             :string(255)
 #  visibility_level       :integer          default(0), not null
 #  archived               :boolean          default(FALSE), not null
+#  avatar                 :string(255)
 #  import_status          :string(255)
 #  repository_size        :float            default(0.0)
 #  star_count             :integer          default(0), not null
 #  import_type            :string(255)
 #  import_source          :string(255)
-#  avatar                 :string(255)
+#  commit_count           :integer          default(0)
 #
 
 require 'carrierwave/orm/activerecord'
 require 'file_size_validator'
 
 class Project < ActiveRecord::Base
-  include Sortable
+  include Gitlab::ConfigHelper
   include Gitlab::ShellAdapter
   include Gitlab::VisibilityLevel
-  include Gitlab::ConfigHelper
-  include Rails.application.routes.url_helpers
+  include Referable
+  include Sortable
 
   extend Gitlab::ConfigHelper
   extend Enumerize
@@ -81,7 +82,7 @@ class Project < ActiveRecord::Base
   has_one :asana_service, dependent: :destroy
   has_one :gemnasium_service, dependent: :destroy
   has_one :slack_service, dependent: :destroy
-  has_one :buildbox_service, dependent: :destroy
+  has_one :buildkite_service, dependent: :destroy
   has_one :bamboo_service, dependent: :destroy
   has_one :teamcity_service, dependent: :destroy
   has_one :pushover_service, dependent: :destroy
@@ -89,6 +90,7 @@ class Project < ActiveRecord::Base
   has_one :redmine_service, dependent: :destroy
   has_one :custom_issue_tracker_service, dependent: :destroy
   has_one :gitlab_issue_tracker_service, dependent: :destroy
+  has_one :external_wiki_service, dependent: :destroy
 
   has_one :forked_project_link, dependent: :destroy, foreign_key: "forked_to_project_id"
 
@@ -113,6 +115,8 @@ class Project < ActiveRecord::Base
   has_many :users_star_projects, dependent: :destroy
   has_many :starrers, through: :users_star_projects, source: :user
 
+  has_one :import_data, dependent: :destroy, class_name: "ProjectImportData"
+
   delegate :name, to: :owner, allow_nil: true, prefix: true
   delegate :members, to: :team, prefix: true
 
@@ -123,12 +127,12 @@ class Project < ActiveRecord::Base
     presence: true,
     length: { within: 0..255 },
     format: { with: Gitlab::Regex.project_name_regex,
-              message: Gitlab::Regex.project_regex_message }
+              message: Gitlab::Regex.project_name_regex_message }
   validates :path,
     presence: true,
     length: { within: 0..255 },
-    format: { with: Gitlab::Regex.path_regex,
-              message: Gitlab::Regex.path_regex_message }
+    format: { with: Gitlab::Regex.project_path_regex,
+              message: Gitlab::Regex.project_path_regex_message }
   validates :issues_enabled, :merge_requests_enabled,
             :wiki_enabled, inclusion: { in: [true, false] }
   validates :issues_tracker_id, length: { maximum: 255 }, allow_blank: true
@@ -136,12 +140,12 @@ class Project < ActiveRecord::Base
   validates_uniqueness_of :name, scope: :namespace_id
   validates_uniqueness_of :path, scope: :namespace_id
   validates :import_url,
-    format: { with: URI::regexp(%w(ssh git http https)), message: 'should be a valid url' },
+    format: { with: /\A#{URI.regexp(%w(ssh git http https))}\z/, message: 'should be a valid url' },
     if: :import?
   validates :star_count, numericality: { greater_than_or_equal_to: 0 }
   validate :check_limit, on: :create
   validate :avatar_type,
-    if: ->(project) { project.avatar && project.avatar_changed? }
+    if: ->(project) { project.avatar.present? && project.avatar_changed? }
   validates :avatar, file_size: { maximum: 200.kilobytes.to_i }
 
   mount_uploader :avatar, AvatarUploader
@@ -154,7 +158,7 @@ class Project < ActiveRecord::Base
   scope :without_user, ->(user)  { where('projects.id NOT IN (:ids)', ids: user.authorized_projects.map(&:id) ) }
   scope :without_team, ->(team) { team.projects.present? ? where('projects.id NOT IN (:ids)', ids: team.projects.map(&:id)) : scoped  }
   scope :not_in_group, ->(group) { where('projects.id NOT IN (:ids)', ids: group.project_ids ) }
-  scope :in_namespace, ->(namespace) { where(namespace_id: namespace.id) }
+  scope :in_namespace, ->(namespace_ids) { where(namespace_id: namespace_ids) }
   scope :in_group_namespace, -> { joins(:group) }
   scope :personal, ->(user) { where(namespace_id: user.namespace_id) }
   scope :joined, ->(user) { where('namespace_id != ?', user.namespace_id) }
@@ -184,6 +188,7 @@ class Project < ActiveRecord::Base
     state :failed
 
     after_transition any => :started, do: :add_import_job
+    after_transition any => :finished, do: :clear_import_data
   end
 
   class << self
@@ -243,6 +248,11 @@ class Project < ActiveRecord::Base
         order_by(method)
       end
     end
+
+    def reference_pattern
+      name_pattern = Gitlab::Regex::NAMESPACE_REGEX_STR
+      %r{(?<project>#{name_pattern}/#{name_pattern})}
+    end
   end
 
   def team
@@ -250,7 +260,11 @@ class Project < ActiveRecord::Base
   end
 
   def repository
-    @repository ||= Repository.new(path_with_namespace)
+    @repository ||= Repository.new(path_with_namespace, nil, self)
+  end
+
+  def commit(id = 'HEAD')
+    repository.commit(id)
   end
 
   def saved?
@@ -259,6 +273,10 @@ class Project < ActiveRecord::Base
 
   def add_import_job
     RepositoryImportWorker.perform_in(2.seconds, id)
+  end
+
+  def clear_import_data
+    self.import_data.destroy if self.import_data
   end
 
   def import?
@@ -293,8 +311,12 @@ class Project < ActiveRecord::Base
     path
   end
 
+  def to_reference(_from_project = nil)
+    path_with_namespace
+  end
+
   def web_url
-    [gitlab_config.url, path_with_namespace].join('/')
+    Rails.application.routes.url_helpers.namespace_project_url(self.namespace, self)
   end
 
   def web_url_without_protocol
@@ -317,12 +339,16 @@ class Project < ActiveRecord::Base
     self.id
   end
 
-  def issue_exists?(issue_id)
+  def get_issue(issue_id)
     if default_issues_tracker?
-      self.issues.where(iid: issue_id).first.present?
+      issues.find_by(iid: issue_id)
     else
-      true
+      ExternalIssue.new(issue_id, self)
     end
+  end
+
+  def issue_exists?(issue_id)
+    get_issue(issue_id)
   end
 
   def default_issue_tracker
@@ -338,11 +364,7 @@ class Project < ActiveRecord::Base
   end
 
   def default_issues_tracker?
-    if external_issue_tracker
-      false
-    else
-      true
-    end
+    !external_issue_tracker
   end
 
   def external_issues_trackers
@@ -411,7 +433,7 @@ class Project < ActiveRecord::Base
     if avatar.present?
       [gitlab_config.url, avatar.url].join
     elsif avatar_in_git
-      [gitlab_config.url, namespace_project_avatar_path(namespace, self)].join
+      Rails.application.routes.url_helpers.namespace_project_avatar_url(namespace, self)
     end
   end
 
@@ -471,7 +493,7 @@ class Project < ActiveRecord::Base
 
   def execute_hooks(data, hooks_scope = :push_hooks)
     hooks.send(hooks_scope).each do |hook|
-      hook.async_execute(data)
+      hook.async_execute(data, hooks_scope.to_s)
     end
   end
 
@@ -549,7 +571,7 @@ class Project < ActiveRecord::Base
   end
 
   def http_url_to_repo
-    [gitlab_config.url, '/', path_with_namespace, '.git'].join('')
+    "#{web_url}.git"
   end
 
   # Check if current branch name is marked as protected in the system
@@ -661,6 +683,10 @@ class Project < ActiveRecord::Base
     update_attribute(:repository_size, repository.size)
   end
 
+  def update_commit_count
+    update_attribute(:commit_count, repository.commit_count)
+  end
+
   def forks_count
     ForkedProjectLink.where(forked_from_project_id: self.id).count
   end
@@ -674,11 +700,21 @@ class Project < ActiveRecord::Base
   end
 
   def create_repository
-    if gitlab_shell.add_repository(path_with_namespace)
-      true
+    if forked?
+      if gitlab_shell.fork_repository(forked_from_project.path_with_namespace, self.namespace.path)
+        ensure_satellite_exists
+        true
+      else
+        errors.add(:base, 'Failed to fork repository via gitlab-shell')
+        false
+      end
     else
-      errors.add(:base, 'Failed to create repository')
-      false
+      if gitlab_shell.add_repository(path_with_namespace)
+        true
+      else
+        errors.add(:base, 'Failed to create repository via gitlab-shell')
+        false
+      end
     end
   end
 

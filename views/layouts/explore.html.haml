@@ -1,30 +1,5 @@
-- page_title = 'Обзор'
-!!! 5
-%html{ lang: "en"}
-  = render "layouts/head", title: page_title
-  %body{class: "#{app_theme}  application", :'data-page' => body_data_page}
-    = render "layouts/broadcast"
-    - if current_user
-      = render "layouts/head_panel", title: link_to(page_title, explore_root_path)
-    - else
-      = render "layouts/public_head_panel", title: link_to(page_title, explore_root_path)
-    .container.navless-container
-      .content
-        .explore-title
-          %h3
-            Обзор GitLab
-          %p.lead
-            Откройте для себя проекты и группы. Поделитесь вашими проектами с другими
+- page_title    "Explore"
+- header_title  "Explore GitLab", explore_root_path
+- sidebar       "explore"
 
-
-        %ul.nav.nav-tabs
-          = nav_link(path: 'projects#trending') do
-            = link_to 'Актуальные проекты', explore_root_path
-          = nav_link(path: 'projects#starred') do
-            = link_to 'Избранные проекты', starred_explore_projects_path
-          = nav_link(path: 'projects#index') do
-            = link_to 'Все проекты', explore_projects_path
-          = nav_link(controller: :groups) do
-            = link_to 'Все группы', explore_groups_path
-
-        = yield
+= render template: "layouts/application"

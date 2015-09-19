@@ -1,3 +1,4 @@
+- page_title "Sign in"
 %div
   - if signin_enabled? || ldap_enabled?
     = render 'devise/shared/signin_box'
@@ -15,4 +16,4 @@
   -# Show a message if none of the mechanisms above are enabled
   - if !signin_enabled? && !ldap_enabled? && !(Gitlab.config.omniauth.enabled && devise_mapping.omniauthable?)
     %div
-      Не настроены методы проверки авторизации.
+      No authentication methods configured.

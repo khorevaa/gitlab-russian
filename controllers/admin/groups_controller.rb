@@ -1,5 +1,5 @@
 class Admin::GroupsController < Admin::ApplicationController
-  before_filter :group, only: [:edit, :show, :update, :destroy, :project_update, :members_update]
+  before_action :group, only: [:edit, :show, :update, :destroy, :project_update, :members_update]
 
   def index
     @groups = Group.all
@@ -41,13 +41,13 @@ class Admin::GroupsController < Admin::ApplicationController
   end
 
   def members_update
-    @group.add_users(params[:user_ids].split(','), params[:access_level])
+    @group.add_users(params[:user_ids].split(','), params[:access_level], current_user)
 
     redirect_to [:admin, @group], notice: 'Users were successfully added.'
   end
 
   def destroy
-    @group.destroy
+    DestroyGroupService.new(@group, current_user).execute
 
     redirect_to admin_groups_path, notice: 'Group was successfully deleted.'
   end

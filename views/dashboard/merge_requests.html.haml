@@ -1,10 +1,11 @@
+- page_title "Запросы слияния"
 %h3.page-title
-  Merge Requests
+  Запросы слияния
 
 
 %p.light
-  List all merge requests from all projects you have access to.
+  Список всех запросов слияния из всех проектов, к которым у вас есть доступ.
 %hr
 .append-bottom-20
-  = render 'shared/issuable_filter'
+  = render 'shared/issuable/filter', type: :merge_requests
 = render 'shared/merge_requests'

@@ -2,20 +2,25 @@
 .select2-container, .select2-container.select2-drop-above {
   .select2-choice {
     background: #FFF;
-    border-color: #CCC;
+    border-color: #DDD;
+    height: 34px;
     padding: 6px 14px;
+    font-size: 14px;
     line-height: 1.42857143;
-    height: auto;
+
+    @include border-radius(4px);
 
     .select2-arrow {
       background: #FFF;
-      border-left: 1px solid #DDD;
+      border-left: none;
+      padding-top: 3px;
     }
   }
 }
 
 .select2-container-multi .select2-choices {
-  @include border-radius(4px)
+  @include border-radius(4px);
+  border-color: #CCC;
 }
 
 .select2-container-multi .select2-choices .select2-search-field input {
@@ -28,6 +33,7 @@
 .select2-drop-active {
   border: 1px solid #BBB !important;
   margin-top: 4px;
+  font-size: 13px;
 
   &.select2-drop-above {
     margin-bottom: 8px;
@@ -46,55 +52,13 @@
   }
 }
 
-select {
-  &.select2 {
-    width: 100px;
-  }
-
-  &.select2-sm {
-    width: 100px;
-  }
+.select2-container {
+  width: 100% !important;
 }
-
-@media (min-width: $screen-sm-min) {
-  select {
-    &.select2 {
-      width: 150px;
-    }
-    &.select2-sm {
-      width: 120px;
-    }
-  }
-}
-
-/* Medium devices (desktops, 992px and up) */
-@media (min-width: $screen-md-min) {
-  select {
-    &.select2 {
-      width: 170px;
-    }
-    &.select2-sm {
-      width: 140px;
-    }
-  }
-}
-
-/* Large devices (large desktops, 1200px and up) */
-@media (min-width: $screen-lg-min) {
-  select {
-    &.select2 {
-      width: 200px;
-    }
-    &.select2-sm {
-      width: 150px;
-    }
-  }
-}
-
 
 /** Branch/tag selector **/
 .project-refs-form .select2-container {
-  margin-right: 10px;
+  width: 160px !important;
 }
 
 .ajax-users-dropdown, .ajax-project-users-dropdown {
@@ -147,4 +111,8 @@ select {
     margin-left: 10px;
     font-weight: bolder;
   }
+}
+
+.ajax-users-dropdown {
+  min-width: 225px !important;
 }

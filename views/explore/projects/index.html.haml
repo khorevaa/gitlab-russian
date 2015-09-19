@@ -1,3 +1,4 @@
+- page_title "Projects"
 .clearfix
   = render 'filter'
 
@@ -6,6 +7,6 @@
   %ul.bordered-list.top-list
     = render @projects
     - unless @projects.present?
-      .nothing-here-block Нет публичных проектов
+      .nothing-here-block No public projects
 
   = paginate @projects, theme: "gitlab"

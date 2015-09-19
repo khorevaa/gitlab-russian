@@ -10,13 +10,13 @@
 #  title       :string(255)
 #  type        :string(255)
 #  fingerprint :string(255)
+#  public      :boolean          default(FALSE), not null
 #
 
 require 'digest/md5'
 
 class Key < ActiveRecord::Base
   include Sortable
-  include Gitlab::Popen
 
   belongs_to :user
 
@@ -24,6 +24,7 @@ class Key < ActiveRecord::Base
 
   validates :title, presence: true, length: { within: 0..255 }
   validates :key, presence: true, length: { within: 0..5000 }, format: { with: /\A(ssh|ecdsa)-.*\Z/ }, uniqueness: true
+  validates :key, format: { without: /\n|\r/, message: 'should be a single line' }
   validates :fingerprint, uniqueness: true, presence: { message: 'cannot be generated' }
 
   delegate :name, :email, to: :user, prefix: true
@@ -36,6 +37,11 @@ class Key < ActiveRecord::Base
 
   def strip_white_space
     self.key = key.strip unless key.blank?
+  end
+
+  def publishable_key
+    #Removes anything beyond the keytype and key itself
+    self.key.split[0..1].join(' ')
   end
 
   # projects that has this key
@@ -79,20 +85,9 @@ class Key < ActiveRecord::Base
 
   def generate_fingerprint
     self.fingerprint = nil
-    return unless key.present?
 
-    cmd_status = 0
-    cmd_output = ''
-    Tempfile.open('gitlab_key_file') do |file|
-      file.puts key
-      file.rewind
-      cmd_output, cmd_status = popen(%W(ssh-keygen -lf #{file.path}), '/tmp')
-    end
+    return unless self.key.present?
 
-    if cmd_status.zero?
-      cmd_output.gsub /(\h{2}:)+\h{2}/ do |match|
-        self.fingerprint = match
-      end
-    end
+    self.fingerprint = Gitlab::KeyFingerprint.new(self.key).fingerprint
   end
 end

@@ -2,26 +2,6 @@ require 'digest/md5'
 require 'uri'
 
 module ApplicationHelper
-  COLOR_SCHEMES = {
-    1 => 'white',
-    2 => 'dark',
-    3 => 'solarized-light',
-    4 => 'solarized-dark',
-    5 => 'monokai',
-  }
-  COLOR_SCHEMES.default = 'white'
-
-  # Helper method to access the COLOR_SCHEMES
-  #
-  # The keys are the `color_scheme_ids`
-  # The values are the `name` of the scheme.
-  #
-  # The preview images are `name-scheme-preview.png`
-  # The stylesheets should use the css class `.name`
-  def color_schemes
-    COLOR_SCHEMES.freeze
-  end
-
   # Check if a particular controller is the current one
   #
   # args - One or more controller names to check
@@ -125,7 +105,7 @@ module ApplicationHelper
 
     # If reference is commit id - we should add it to branch/tag selectbox
     if(@ref && !options.flatten.include?(@ref) &&
-       @ref =~ /^[0-9a-zA-Z]{6,52}$/)
+       @ref =~ /\A[0-9a-zA-Z]{6,52}\z/)
       options << ['Commit', [@ref]]
     end
 
@@ -136,18 +116,6 @@ module ApplicationHelper
     # should be an array of strings
     # so to_s can be called, because it is sufficient and to_json is too slow
     Emoji.names.to_s
-  end
-
-  def app_theme
-    Gitlab::Theme.css_class_by_id(current_user.try(:theme_id))
-  end
-
-  def theme_type
-    Gitlab::Theme.type_css_class_by_id(current_user.try(:theme_id))
-  end
-
-  def user_color_scheme_class
-    COLOR_SCHEMES[current_user.try(:color_scheme_id)] if defined?(current_user)
   end
 
   # Define whenever show last push event
@@ -174,15 +142,9 @@ module ApplicationHelper
     Digest::SHA1.hexdigest string
   end
 
-  def authbutton(provider, size = 64)
-    file_name = "#{provider.to_s.split('_').first}_#{size}.png"
-    image_tag(image_path("authbuttons/#{file_name}"), alt: "Sign in with #{provider.to_s.titleize}")
-  end
-
   def simple_sanitize(str)
     sanitize(str, tags: %w(a span))
   end
-
 
   def body_data_page
     path = controller.controller_path.split('/')
@@ -203,13 +165,13 @@ module ApplicationHelper
 
   def search_placeholder
     if @project && @project.persisted?
-      'Search in this project'
+      'Поиск в этом проекте'
     elsif @snippet || @snippets || @show_snippets
-      'Search snippets'
+      'Поиск фрагментов'
     elsif @group && @group.persisted?
-      'Search in this group'
+      'Поиск в этой группе'
     else
-      'Search'
+      'Поиск'
     end
   end
 
@@ -217,60 +179,66 @@ module ApplicationHelper
     BroadcastMessage.current
   end
 
-  def time_ago_with_tooltip(date, placement = 'top', html_class = 'time_ago')
-    capture_haml do
-      haml_tag :time, date.to_s,
-        class: html_class, datetime: date.getutc.iso8601, title: date.stamp('Aug 21, 2011 9:23pm'),
-        data: { toggle: 'tooltip', placement: placement }
+  # Render a `time` element with Javascript-based relative date and tooltip
+  #
+  # time       - Time object
+  # placement  - Tooltip placement String (default: "top")
+  # html_class - Custom class for `time` element (default: "time_ago")
+  # skip_js    - When true, exclude the `script` tag (default: false)
+  #
+  # By default also includes a `script` element with Javascript necessary to
+  # initialize the `timeago` jQuery extension. If this method is called many
+  # times, for example rendering hundreds of commits, it's advisable to disable
+  # this behavior using the `skip_js` argument and re-initializing `timeago`
+  # manually once all of the elements have been rendered.
+  #
+  # A `js-timeago` class is always added to the element, even when a custom
+  # `html_class` argument is provided.
+  #
+  # Returns an HTML-safe String
+  def time_ago_with_tooltip(time, placement: 'top', html_class: 'time_ago', skip_js: false)
+    element = content_tag :time, time.to_s,
+      class: "#{html_class} js-timeago",
+      datetime: time.getutc.iso8601,
+      title: time.in_time_zone.stamp('Aug 21, 2011 9:23pm'),
+      data: { toggle: 'tooltip', placement: placement }
 
-      haml_tag :script, "$('." + html_class + "').timeago().tooltip()"
-    end.html_safe
+    element += javascript_tag "$('.js-timeago').timeago()" unless skip_js
+
+    element
   end
 
   def render_markup(file_name, file_content)
-    GitHub::Markup.render(file_name, file_content).
-      force_encoding(file_content.encoding).html_safe
+    if gitlab_markdown?(file_name)
+      Haml::Helpers.preserve(markdown(file_content))
+    elsif asciidoc?(file_name)
+      asciidoc(file_content)
+    elsif plain?(file_name)
+      content_tag :pre, class: 'plain-readme' do
+        file_content
+      end
+    else
+      GitHub::Markup.render(file_name, file_content).
+        force_encoding(file_content.encoding).html_safe
+    end
   rescue RuntimeError
     simple_format(file_content)
   end
 
+  def plain?(filename)
+    Gitlab::MarkupHelper.plain?(filename)
+  end
+
   def markup?(filename)
-    Gitlab::MarkdownHelper.markup?(filename)
+    Gitlab::MarkupHelper.markup?(filename)
   end
 
   def gitlab_markdown?(filename)
-    Gitlab::MarkdownHelper.gitlab_markdown?(filename)
+    Gitlab::MarkupHelper.gitlab_markdown?(filename)
   end
 
-  def link_to(name = nil, options = nil, html_options = nil, &block)
-    begin
-      uri = URI(options)
-      host = uri.host
-      absolute_uri = uri.absolute?
-    rescue URI::InvalidURIError, ArgumentError
-      host = nil
-      absolute_uri = nil
-    end
-
-    # Add 'nofollow' only to external links
-    if host && host != Gitlab.config.gitlab.host && absolute_uri
-      if html_options
-        if html_options[:rel]
-          html_options[:rel] << ' nofollow'
-        else
-          html_options.merge!(rel: 'nofollow')
-        end
-      else
-        html_options = Hash.new
-        html_options[:rel] = 'nofollow'
-      end
-    end
-
-    super
-  end
-
-  def escaped_autolink(text)
-    auto_link ERB::Util.html_escape(text), link: :urls
+  def asciidoc?(filename)
+    Gitlab::MarkupHelper.asciidoc?(filename)
   end
 
   def promo_host
@@ -281,7 +249,9 @@ module ApplicationHelper
     'https://' + promo_host
   end
 
-  def page_filter_path(options={})
+  def page_filter_path(options = {})
+    without = options.delete(:without)
+
     exist_opts = {
       state: params[:state],
       scope: params[:scope],
@@ -293,6 +263,12 @@ module ApplicationHelper
     }
 
     options = exist_opts.merge(options)
+
+    if without.present?
+      without.each do |key|
+        options.delete(key)
+      end
+    end
 
     path = request.path
     path << "?#{options.to_param}"
@@ -311,11 +287,29 @@ module ApplicationHelper
     end
   end
 
-  def nav_sidebar_class
-    if nav_menu_collapsed?
-      "page-sidebar-collapsed"
-    else
-      "page-sidebar-expanded"
+  def state_filters_text_for(entity, project)
+    titles = {
+      opened: "Open"
+    }
+
+    entity_title = titles[entity] || entity.to_s.humanize
+
+    count =
+      if project.nil?
+        nil
+      elsif current_controller?(:issues)
+        project.issues.send(entity).count
+      elsif current_controller?(:merge_requests)
+        project.merge_requests.send(entity).count
+      end
+
+    html = content_tag :span, entity_title
+
+    if count.present?
+      html += " "
+      html += content_tag :span, number_with_delimiter(count), class: 'badge'
     end
+
+    html.html_safe
   end
 end

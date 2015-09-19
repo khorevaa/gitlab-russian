@@ -1,3 +1,8 @@
+- page_title "Issues"
+= content_for :meta_tags do
+  - if current_user
+    = auto_discovery_link_tag(:atom, namespace_project_issues_url(@project.namespace, @project, :atom, private_token: current_user.private_token), title: "#{@project.name} issues")
+
 .append-bottom-10
   .pull-right
     .pull-left
@@ -6,24 +11,14 @@
           = link_to namespace_project_issues_path(@project.namespace, @project, :atom, { private_token: current_user.private_token }), class: 'btn append-right-10' do
             %i.fa.fa-rss
 
-      = render 'shared/issuable_search_form', path: namespace_project_issues_path(@project.namespace, @project)
+      = render 'shared/issuable/search_form', path: namespace_project_issues_path(@project.namespace, @project)
 
-    - if can? current_user, :write_issue, @project
-      = link_to new_namespace_project_issue_path(@project.namespace, @project, issue: { assignee_id: params[:assignee_id], milestone_id: params[:milestone_id]}), class: "btn btn-new pull-left", title: "Новый вопрос", id: "new_issue_link" do
+    - if can? current_user, :create_issue, @project
+      = link_to new_namespace_project_issue_path(@project.namespace, @project, issue: { assignee_id: @issuable_finder.assignee.try(:id), milestone_id: @issuable_finder.milestones.try(:first).try(:id) }), class: "btn btn-new pull-left", title: "New Issue", id: "new_issue_link" do
         %i.fa.fa-plus
-        Новый вопрос
+        New Issue
 
-  = render 'shared/issuable_filter'
-
-  .clearfix
-    .issues_bulk_update.hide
-      = form_tag bulk_update_namespace_project_issues_path(@project.namespace, @project), method: :post  do
-        = select_tag('update[state_event]', options_for_select([['Открыть', 'reopen'], ['Закрыть', 'close']]), prompt: "Статус")
-        = project_users_select_tag('update[assignee_id]', placeholder: 'Назначить')
-        = select_tag('update[milestone_id]', bulk_update_milestone_options, prompt: "Итерация")
-        = hidden_field_tag 'update[issues_ids]', []
-        = hidden_field_tag :state_event, params[:state_event]
-        = button_tag "Обновить вопрос", class: "btn update_selected_issues btn-save"
+  = render 'shared/issuable/filter', type: :issues
 
 .issues-holder
   = render "issues"

@@ -1,10 +1,16 @@
 class Commit
-  include ActiveModel::Conversion
-  include StaticModel
   extend ActiveModel::Naming
+
+  include ActiveModel::Conversion
   include Mentionable
+  include Participable
+  include Referable
+  include StaticModel
 
   attr_mentionable :safe_message
+  participant :author, :committer, :notes, :mentioned_users
+
+  attr_accessor :project
 
   # Safe amount of changes (files and lines) in one commit to render
   # Used to prevent 500 error on huge commits by suppressing diff
@@ -18,12 +24,12 @@ class Commit
   DIFF_HARD_LIMIT_LINES = 50000 unless defined?(DIFF_HARD_LIMIT_LINES)
 
   class << self
-    def decorate(commits)
+    def decorate(commits, project)
       commits.map do |commit|
         if commit.kind_of?(Commit)
           commit
         else
-          self.new(commit)
+          self.new(commit, project)
         end
       end
     end
@@ -41,14 +47,43 @@ class Commit
 
   attr_accessor :raw
 
-  def initialize(raw_commit)
+  def initialize(raw_commit, project)
     raise "Nil as raw commit passed" unless raw_commit
 
     @raw = raw_commit
+    @project = project
   end
 
   def id
     @raw.id
+  end
+
+  def ==(other)
+    (self.class === other) && (raw == other.raw)
+  end
+
+  def self.reference_prefix
+    '@'
+  end
+
+  # Pattern used to extract commit references from text
+  #
+  # The SHA can be between 6 and 40 hex characters.
+  #
+  # This pattern supports cross-project references.
+  def self.reference_pattern
+    %r{
+      (?:#{Project.reference_pattern}#{reference_prefix})?
+      (?<commit>\h{6,40})
+    }x
+  end
+
+  def to_reference(from_project = nil)
+    if cross_project_reference?(from_project)
+      "#{project.to_reference}@#{id}"
+    else
+      id
+    end
   end
 
   def diff_line_count
@@ -77,7 +112,7 @@ class Commit
 
     title_end = title.index("\n")
     if (!title_end && title.length > 100) || (title_end && title_end > 100)
-      title[0..79] << "&hellip;".html_safe
+      title[0..79] << "…"
     else
       title.split("\n", 2).first
     end
@@ -90,7 +125,7 @@ class Commit
     title_end = safe_message.index("\n")
     @description ||=
       if (!title_end && safe_message.length > 100) || (title_end && title_end > 100)
-        "&hellip;".html_safe << safe_message[80..-1]
+        "…" << safe_message[80..-1]
       else
         safe_message.split("\n", 2)[1].try(:chomp)
       end
@@ -100,7 +135,7 @@ class Commit
     description.present?
   end
 
-  def hook_attrs(project)
+  def hook_attrs
     path_with_namespace = project.path_with_namespace
 
     {
@@ -117,23 +152,28 @@ class Commit
 
   # Discover issues should be closed when this commit is pushed to a project's
   # default branch.
-  def closes_issues(project)
-    Gitlab::ClosingIssueExtractor.closed_by_message_in_project(safe_message, project)
+  def closes_issues(current_user = self.committer)
+    Gitlab::ClosingIssueExtractor.new(project, current_user).closed_by_message(safe_message)
   end
 
-  # Mentionable override.
-  def gfm_reference
-    "commit #{id}"
+  def author
+    @author ||= User.find_by_any_email(author_email)
+  end
+
+  def committer
+    @committer ||= User.find_by_any_email(committer_email)
+  end
+
+  def notes
+    project.notes.for_commit_id(self.id)
   end
 
   def method_missing(m, *args, &block)
     @raw.send(m, *args, &block)
   end
 
-  def respond_to?(method)
-    return true if @raw.respond_to?(method)
-
-    super
+  def respond_to_missing?(method, include_private = false)
+    @raw.respond_to?(method, include_private) || super
   end
 
   # Truncate sha to 8 characters
@@ -142,6 +182,6 @@ class Commit
   end
 
   def parents
-    @parents ||= Commit.decorate(super)
+    @parents ||= Commit.decorate(super, project)
   end
 end

@@ -44,7 +44,7 @@ class Event < ActiveRecord::Base
   after_create :reset_project_activity
 
   # Scopes
-  scope :recent, -> { order("created_at DESC") }
+  scope :recent, -> { order(created_at: :desc) }
   scope :code_push, -> { where(action: PUSHED) }
   scope :in_projects, ->(project_ids) { where(project_id: project_ids).recent }
   scope :with_associations, -> { includes(project: :namespace) }
@@ -54,6 +54,12 @@ class Event < ActiveRecord::Base
       Event.where(target_id: target.id, target_type: target.class.to_s).
         order('id DESC').limit(100).
         update_all(updated_at: Time.now)
+    end
+
+    def contributions
+      where("action = ? OR (target_type in (?) AND action in (?))",
+            Event::PUSHED, ["MergeRequest", "Issue"],
+            [Event::CREATED, Event::CLOSED, Event::MERGED])
     end
   end
 
@@ -177,7 +183,11 @@ class Event < ActiveRecord::Base
     elsif commented?
       "commented on"
     elsif created_project?
-      "created"
+      if project.import?
+        "imported"
+      else
+        "created"
+      end
     else
       "opened"
     end
@@ -247,7 +257,7 @@ class Event < ActiveRecord::Base
   end
 
   def push_with_commits?
-    md_ref? && commits.any? && commit_from && commit_to
+    !commits.empty? && commit_from && commit_to
   end
 
   def last_push_to_non_root?

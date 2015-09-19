@@ -1,7 +1,6 @@
 class Projects::UploadsController < Projects::ApplicationController
-  layout 'project'
-
-  before_filter :project
+  skip_before_action :authenticate_user!, :reject_blocked!, :project,
+    :repository, if: -> { action_name == 'show' && image? }
 
   def create
     link_to_file = ::Projects::UploadService.new(project, params[:file]).
@@ -21,15 +20,32 @@ class Projects::UploadsController < Projects::ApplicationController
   end
 
   def show
-    uploader = FileUploader.new(project, params[:secret])
-
-    return redirect_to uploader.url unless uploader.file_storage?
-
-    uploader.retrieve_from_store!(params[:filename])
-
-    return not_found! unless uploader.file.exists?
+    return not_found! if uploader.nil? || !uploader.file.exists?
 
     disposition = uploader.image? ? 'inline' : 'attachment'
     send_file uploader.file.path, disposition: disposition
+  end
+
+  def uploader
+    return @uploader if defined?(@uploader)
+
+    namespace = params[:namespace_id]
+    id = params[:project_id]
+
+    file_project = Project.find_with_namespace("#{namespace}/#{id}")
+
+    if file_project.nil?
+      @uploader = nil
+      return
+    end
+
+    @uploader = FileUploader.new(file_project, params[:secret])
+    @uploader.retrieve_from_store!(params[:filename])
+
+    @uploader
+  end
+
+  def image?
+    uploader && uploader.file.exists? && uploader.image?
   end
 end

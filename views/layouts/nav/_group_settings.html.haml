@@ -1,0 +1,20 @@
+%ul.nav.nav-sidebar
+  = nav_link do
+    = link_to group_path(@group), title: 'Вернуться к группе', data: {placement: 'right'}, class: 'back-link' do
+      = icon('caret-square-o-left fw')
+      %span
+        Вернуться к группе
+
+  %li.separate-item
+
+  %ul.sidebar-subnav
+    = nav_link(path: 'groups#edit') do
+      = link_to edit_group_path(@group), title: 'Настройки группы', data: {placement: 'right'} do
+        = icon ('pencil-square-o fw')
+        %span
+          Настройки группы
+    = nav_link(path: 'groups#projects') do
+      = link_to projects_group_path(@group), title: 'Проекты', data: {placement: 'right'} do
+        = icon('folder fw')
+        %span
+          Проекты

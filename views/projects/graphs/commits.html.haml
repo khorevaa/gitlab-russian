@@ -1,8 +1,11 @@
+- page_title "Commit statistics"
+.tree-ref-holder
+  = render 'shared/ref_switcher', destination: 'graphs_commits'
 = render 'head'
 
 %p.lead
   Commit statistics for
-  %strong #{@repository.root_ref}
+  %strong #{@ref}
   #{@commits_graph.start_date.strftime('%b %d')} - #{@commits_graph.end_date.strftime('%b %d')}
 
 .row
@@ -54,7 +57,7 @@
   }
 
   ctx = $("#hour-chart").get(0).getContext("2d");
-  new Chart(ctx).Line(data,{"scaleOverlay": true, responsive: true});
+  new Chart(ctx).Line(data,{"scaleOverlay": true, responsive: true, pointHitDetectionRadius: 2})
 
   data = {
     labels : #{@commits_per_week_days.keys.to_json},
@@ -68,7 +71,7 @@
   }
 
   ctx = $("#weekday-chart").get(0).getContext("2d");
-  new Chart(ctx).Line(data,{"scaleOverlay": true, responsive: true});
+  new Chart(ctx).Line(data,{"scaleOverlay": true, responsive: true, pointHitDetectionRadius: 2})
 
   data = {
     labels : #{@commits_per_month.keys.to_json},
@@ -82,4 +85,4 @@
   }
 
   ctx = $("#month-chart").get(0).getContext("2d");
-  new Chart(ctx).Line(data,{"scaleOverlay": true, responsive: true});
+  new Chart(ctx).Line(data, {"scaleOverlay": true, responsive: true, pointHitDetectionRadius: 2})

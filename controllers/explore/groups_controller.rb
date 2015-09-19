@@ -1,8 +1,6 @@
-class Explore::GroupsController < ApplicationController
-  skip_before_filter :authenticate_user!,
+class Explore::GroupsController < Explore::ApplicationController
+  skip_before_action :authenticate_user!,
                      :reject_blocked, :set_current_user_for_observers
-
-  layout "explore"
 
   def index
     @groups = GroupsFinder.new.execute(current_user)

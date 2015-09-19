@@ -1,39 +1,35 @@
+- page_title "Ваши фрагменты"
 %h3.page-title
-  Мои сниппеты
+  Ваши фрагменты
   .pull-right
-    = link_to new_snippet_path, class: "btn btn-new btn-grouped", title: "Добавить сниппет" do
-      Добавить новый сниппет
-    = link_to snippets_path, class: "btn btn-grouped"  do
-      Обзор сниппетов
+    = link_to new_snippet_path, class: "btn btn-new btn-grouped", title: "Новый фрагмент" do
+      Добавить новый фрагмент
 
 %p.light
-  Поделитесь кодом из других репозиториев
-%hr
+  Совместное использование кода с другими репозиториями git
 
-.row
-  .col-md-3
-    %ul.nav.nav-pills.nav-stacked
-      = nav_tab :scope, nil do
-        = link_to user_snippets_path(@user) do
-          Все
-          %span.pull-right
-            = @user.snippets.count
-      = nav_tab :scope, 'are_private' do
-        = link_to user_snippets_path(@user, scope: 'are_private') do
-          Приватные
-          %span.pull-right
-            = @user.snippets.are_private.count
-      = nav_tab :scope, 'are_internal' do
-        = link_to user_snippets_path(@user, scope: 'are_internal') do
-          Внутренние
-          %span.pull-right
-            = @user.snippets.are_internal.count
-      = nav_tab :scope, 'are_public' do
-        = link_to user_snippets_path(@user, scope: 'are_public') do
-          Публичные
-          %span.pull-right
-            = @user.snippets.are_public.count
+%ul.nav.nav-tabs
+  = nav_tab :scope, nil do
+    = link_to user_snippets_path(@user) do
+      Все
+      %span.badge
+        = @user.snippets.count
+  = nav_tab :scope, 'are_private' do
+    = link_to user_snippets_path(@user, scope: 'are_private') do
+      Приватные
+      %span.badge
+        = @user.snippets.are_private.count
+  = nav_tab :scope, 'are_internal' do
+    = link_to user_snippets_path(@user, scope: 'are_internal') do
+      Внутренние
+      %span.badge
+        = @user.snippets.are_internal.count
+  = nav_tab :scope, 'are_public' do
+    = link_to user_snippets_path(@user, scope: 'are_public') do
+      Публичные
+      %span.badge
+        = @user.snippets.are_public.count
 
-  .col-md-9.my-snippets
-    = render 'snippets'
+.my-snippets
+  = render 'snippets'
 

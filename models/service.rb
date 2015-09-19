@@ -15,6 +15,7 @@
 #  issues_events         :boolean          default(TRUE)
 #  merge_requests_events :boolean          default(TRUE)
 #  tag_push_events       :boolean          default(TRUE)
+#  note_events           :boolean          default(TRUE), not null
 #
 
 # To add new service you should build a class inherited from Service
@@ -86,8 +87,14 @@ class Service < ActiveRecord::Base
     %w(push tag_push issue merge_request)
   end
 
-  def execute
+  def execute(data)
     # implement inside child
+  end
+
+  def test(data)
+    # default implementation
+    result = execute(data)
+    { success: result.present?, result: result }
   end
 
   def can_test?
@@ -112,7 +119,7 @@ class Service < ActiveRecord::Base
 
   def async_execute(data)
     return unless supported_events.include?(data[:object_kind])
-    
+
     Sidekiq::Client.enqueue(ProjectServiceWorker, id, data)
   end
 
@@ -121,9 +128,27 @@ class Service < ActiveRecord::Base
   end
 
   def self.available_services_names
-    %w(gitlab_ci campfire hipchat pivotaltracker flowdock assembla asana
-       emails_on_push gemnasium slack pushover buildbox bamboo teamcity jira
-       redmine custom_issue_tracker irker)
+    %w(
+      asana
+      assembla
+      bamboo
+      buildkite
+      campfire
+      custom_issue_tracker
+      emails_on_push
+      external_wiki
+      flowdock
+      gemnasium
+      gitlab_ci
+      hipchat
+      irker
+      jira
+      pivotaltracker
+      pushover
+      redmine
+      slack
+      teamcity
+    )
   end
 
   def self.create_from_template(project_id, template)

@@ -25,12 +25,16 @@ module EventsHelper
 
   def event_filter_link(key, tooltip)
     key = key.to_s
-    active = if @event_filter.active? key
-               'active'
-             end
+    active = 'active' if @event_filter.active?(key)
+    link_opts = {
+      class: 'event_filter_link',
+      id:    "#{key}_event_filter",
+      title: "Фильтр по #{tooltip.downcase}",
+      data:  { toggle: 'tooltip', placement: 'top' }
+    }
 
     content_tag :li, class: "filter_icon #{active}" do
-      link_to request.path, class: 'has_tooltip event_filter_link', id: "#{key}_event_filter", 'data-original-title' => 'Filter by ' + tooltip.downcase do
+      link_to request.path, link_opts do
         icon(icon_for_event[key]) + content_tag(:span, ' ' + tooltip)
       end
     end
@@ -96,7 +100,7 @@ module EventsHelper
         end
       end
     elsif event.push?
-      if event.push_with_commits?
+      if event.push_with_commits? && event.md_ref?
         if event.commits_count > 1
           namespace_project_compare_url(event.project.namespace, event.project,
                                         from: event.commit_from, to:
@@ -164,8 +168,8 @@ module EventsHelper
     end
   end
 
-  def event_note(text)
-    text = first_line_in_markdown(text, 150)
+  def event_note(text, options = {})
+    text = first_line_in_markdown(text, 150, options)
     sanitize(text, tags: %w(a img b pre code p span))
   end
 
@@ -185,7 +189,7 @@ module EventsHelper
         xml.id      "tag:#{request.host},#{event.created_at.strftime("%Y-%m-%d")}:#{event.id}"
         xml.link    href: event_link
         xml.title   truncate(event_title, length: 80)
-        xml.updated event.created_at.strftime("%Y-%m-%dT%H:%M:%SZ")
+        xml.updated event.created_at.xmlschema
         xml.media   :thumbnail, width: "40", height: "40", url: avatar_icon(event.author_email)
         xml.author do |author|
           xml.name event.author_name

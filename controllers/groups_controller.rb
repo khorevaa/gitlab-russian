@@ -1,17 +1,16 @@
 class GroupsController < Groups::ApplicationController
-  skip_before_filter :authenticate_user!, only: [:show, :issues, :merge_requests]
+  skip_before_action :authenticate_user!, only: [:show, :issues, :merge_requests]
   respond_to :html
-  before_filter :group, except: [:new, :create]
+  before_action :group, except: [:new, :create]
 
   # Authorize
-  before_filter :authorize_read_group!, except: [:new, :create]
-  before_filter :authorize_admin_group!, only: [:edit, :update, :destroy, :projects]
-  before_filter :authorize_create_group!, only: [:new, :create]
+  before_action :authorize_read_group!, except: [:new, :create]
+  before_action :authorize_admin_group!, only: [:edit, :update, :destroy, :projects]
+  before_action :authorize_create_group!, only: [:new, :create]
 
   # Load group projects
-  before_filter :load_projects, except: [:new, :create, :projects, :edit, :update]
-  before_filter :event_filter, only: :show
-  before_filter :set_title, only: [:new, :create]
+  before_action :load_projects, except: [:new, :create, :projects, :edit, :update]
+  before_action :event_filter, only: :show
 
   layout :determine_layout
 
@@ -25,7 +24,7 @@ class GroupsController < Groups::ApplicationController
 
     if @group.save
       @group.add_owner(current_user)
-      redirect_to @group, notice: 'Group was successfully created.'
+      redirect_to @group, notice: "Group '#{@group.name}' was successfully created."
     else
       render action: "new"
     end
@@ -76,16 +75,16 @@ class GroupsController < Groups::ApplicationController
 
   def update
     if @group.update_attributes(group_params)
-      redirect_to edit_group_path(@group), notice: 'Group was successfully updated.'
+      redirect_to edit_group_path(@group), notice: "Group '#{@group.name}' was successfully updated."
     else
       render action: "edit"
     end
   end
 
   def destroy
-    @group.destroy
+    DestroyGroupService.new(@group, current_user).execute
 
-    redirect_to root_path, notice: 'Group was removed.'
+    redirect_to root_path, alert: "Group '#{@group.name} was deleted."
   end
 
   protected
@@ -119,17 +118,13 @@ class GroupsController < Groups::ApplicationController
     end
   end
 
-  def set_title
-    @title = 'New Group'
-  end
-
   def determine_layout
     if [:new, :create].include?(action_name.to_sym)
-      'navless'
-    elsif current_user
-      'group'
+      'application'
+    elsif [:edit, :update, :projects].include?(action_name.to_sym)
+      'group_settings'
     else
-      'public_group'
+      'group'
     end
   end
 

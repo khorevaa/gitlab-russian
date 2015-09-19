@@ -15,6 +15,7 @@
 #  issues_events         :boolean          default(TRUE)
 #  merge_requests_events :boolean          default(TRUE)
 #  tag_push_events       :boolean          default(TRUE)
+#  note_events           :boolean          default(TRUE), not null
 #
 
 require "flowdock-git-hook"
@@ -37,7 +38,7 @@ class FlowdockService < Service
 
   def fields
     [
-      { type: 'text', name: 'token',     placeholder: '' }
+      { type: 'text', name: 'token', placeholder: 'Flowdock Git source token' }
     ]
   end
 

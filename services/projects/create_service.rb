@@ -5,6 +5,8 @@ module Projects
     end
 
     def execute
+      forked_from_project_id = params.delete(:forked_from_project_id)
+
       @project = Project.new(params)
 
       # Make sure that the user is allowed to use the specified visibility
@@ -45,10 +47,14 @@ module Projects
 
       @project.creator = current_user
 
+      if forked_from_project_id
+        @project.build_forked_project_link(forked_from_project_id: forked_from_project_id)
+      end
+
       Project.transaction do
         @project.save
 
-        unless @project.import?
+        if @project.persisted? && !@project.import?
           unless @project.create_repository
             raise 'Failed to create repository'
           end
@@ -79,11 +85,13 @@ module Projects
 
       @project.create_wiki if @project.wiki_enabled?
 
+      @project.build_missing_services
+
       event_service.create_project(@project, current_user)
       system_hook_service.execute_hooks_for(@project, :create)
 
       unless @project.group
-        @project.team << [current_user, :master]
+        @project.team << [current_user, :master, current_user]
       end
 
       @project.update_column(:last_activity_at, @project.created_at)

@@ -1,7 +1,5 @@
 class Projects::AvatarsController < Projects::ApplicationController
-  layout 'project'
-
-  before_filter :project
+  before_action :project
 
   def show
     @blob = @project.repository.blob_at_branch('master', @project.avatar_in_git)

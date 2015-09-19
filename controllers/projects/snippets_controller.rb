@@ -1,18 +1,18 @@
 class Projects::SnippetsController < Projects::ApplicationController
-  before_filter :module_enabled
-  before_filter :snippet, only: [:show, :edit, :destroy, :update, :raw]
+  before_action :module_enabled
+  before_action :snippet, only: [:show, :edit, :destroy, :update, :raw]
 
   # Allow read any snippet
-  before_filter :authorize_read_project_snippet!
+  before_action :authorize_read_project_snippet!
 
   # Allow write(create) snippet
-  before_filter :authorize_write_project_snippet!, only: [:new, :create]
+  before_action :authorize_create_project_snippet!, only: [:new, :create]
 
   # Allow modify snippet
-  before_filter :authorize_modify_project_snippet!, only: [:edit, :update]
+  before_action :authorize_update_project_snippet!, only: [:edit, :update]
 
   # Allow destroy snippet
-  before_filter :authorize_admin_project_snippet!, only: [:destroy]
+  before_action :authorize_admin_project_snippet!, only: [:destroy]
 
   respond_to :html
 
@@ -75,8 +75,8 @@ class Projects::SnippetsController < Projects::ApplicationController
     @snippet ||= @project.snippets.find(params[:id])
   end
 
-  def authorize_modify_project_snippet!
-    return render_404 unless can?(current_user, :modify_project_snippet, @snippet)
+  def authorize_update_project_snippet!
+    return render_404 unless can?(current_user, :update_project_snippet, @snippet)
   end
 
   def authorize_admin_project_snippet!

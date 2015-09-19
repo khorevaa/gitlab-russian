@@ -1,25 +1,33 @@
 class Projects::IssuesController < Projects::ApplicationController
-  before_filter :module_enabled
-  before_filter :issue, only: [:edit, :update, :show, :toggle_subscription]
+  before_action :module_enabled
+  before_action :issue, only: [:edit, :update, :show, :toggle_subscription]
 
   # Allow read any issue
-  before_filter :authorize_read_issue!
+  before_action :authorize_read_issue!
 
   # Allow write(create) issue
-  before_filter :authorize_write_issue!, only: [:new, :create]
+  before_action :authorize_create_issue!, only: [:new, :create]
 
   # Allow modify issue
-  before_filter :authorize_modify_issue!, only: [:edit, :update]
+  before_action :authorize_update_issue!, only: [:edit, :update]
 
   # Allow issues bulk update
-  before_filter :authorize_admin_issues!, only: [:bulk_update]
+  before_action :authorize_admin_issues!, only: [:bulk_update]
 
   respond_to :html
 
   def index
     terms = params['issue_search']
     @issues = get_issues_collection
-    @issues = @issues.full_search(terms) if terms.present?
+
+    if terms.present?
+      if terms =~ /\A#(\d+)\z/
+        @issues = @issues.where(iid: $1)
+      else
+        @issues = @issues.full_search(terms)
+      end
+    end
+
     @issues = @issues.page(params[:page]).per(PER_PAGE)
 
     respond_to do |format|
@@ -47,6 +55,7 @@ class Projects::IssuesController < Projects::ApplicationController
   end
 
   def show
+    @participants = @issue.participants(current_user, @project)
     @note = @project.notes.new(noteable: @issue)
     @notes = @issue.notes.inc_author.fresh
     @noteable = @issue
@@ -99,7 +108,7 @@ class Projects::IssuesController < Projects::ApplicationController
 
   def toggle_subscription
     @issue.toggle_subscription(current_user)
-    
+
     render nothing: true
   end
 
@@ -113,8 +122,8 @@ class Projects::IssuesController < Projects::ApplicationController
                end
   end
 
-  def authorize_modify_issue!
-    return render_404 unless can?(current_user, :modify_issue, @issue)
+  def authorize_update_issue!
+    return render_404 unless can?(current_user, :update_issue, @issue)
   end
 
   def authorize_admin_issues!
@@ -122,7 +131,7 @@ class Projects::IssuesController < Projects::ApplicationController
   end
 
   def module_enabled
-    return render_404 unless @project.issues_enabled
+    return render_404 unless @project.issues_enabled && @project.default_issues_tracker?
   end
 
   # Since iids are implemented only in 6.1

@@ -11,8 +11,15 @@
     z-index: 10;
 
     > span {
-      @include str-truncated(65%);
       font-family: $monospace_font;
+      word-break: break-all;
+      margin-right: 200px;
+      display: block;
+
+      .file-mode {
+        margin-left: 10px;
+        color: #777;
+      }
     }
 
     .diff-btn-group {
@@ -31,11 +38,6 @@
     .commit-short-id {
       font-family: $monospace_font;
       font-size: smaller;
-    }
-
-    .file-mode {
-      font-family: $monospace_font;
-      margin-left: 10px;
     }
   }
   .diff-content {
@@ -61,6 +63,17 @@
     .file-mode-changed {
       padding: 10px;
       color: #777;
+    }
+
+    .suppressed-container {
+      padding: ($padding-base-vertical + 5px) $padding-base-horizontal;
+      text-align: center;
+
+      // "Changes suppressed. Click to show." link
+      .show-suppressed-diff {
+        font-size: 110%;
+        font-weight: bold;
+      }
     }
 
     table {

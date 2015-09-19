@@ -2,18 +2,20 @@
 class Projects::TreeController < Projects::ApplicationController
   include ExtractsPath
 
-  before_filter :require_non_empty_project, except: [:new, :create]
-  before_filter :assign_ref_vars
-  before_filter :authorize_download_code!
+  before_action :require_non_empty_project, except: [:new, :create]
+  before_action :assign_ref_vars
+  before_action :authorize_download_code!
 
   def show
+    return not_found! unless @repository.commit(@ref)
+
     if tree.entries.empty?
       if @repository.blob_at(@commit.id, @path)
         redirect_to(
           namespace_project_blob_path(@project.namespace, @project,
                                       File.join(@ref, @path))
         ) and return
-      else
+      elsif @path.present?
         return not_found!
       end
     end

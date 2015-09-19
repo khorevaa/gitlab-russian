@@ -1,13 +1,13 @@
-class @calendar
+class @Calendar
   options =
     month: "short"
     day: "numeric"
     year: "numeric"
 
-  constructor: (timestamps, starting_year, starting_month) ->
+  constructor: (timestamps, starting_year, starting_month, calendar_activities_path) ->
     cal = new CalHeatMap()
     cal.init
-      itemName: ["commit"]
+      itemName: ["contribution"]
       data: timestamps
       start: new Date(starting_year, starting_month)
       domainLabelFormat: "%b"
@@ -20,11 +20,20 @@ class @calendar
         position: "top"
       legend: [
         0
-        1
-        4
-        7
+        10
+        20
+        30
       ]
       legendCellPadding: 3
+      cellSize: $('.user-calendar').width() / 80
       onClick: (date, count) ->
-        return
-    return
+        formated_date = date.getFullYear() + "-" + (date.getMonth()+1) + "-" + date.getDate()
+        $.ajax
+          url: calendar_activities_path
+          data:
+            date: formated_date
+          cache: false
+          dataType: "html"
+          success: (data) ->
+            $(".user-calendar-activities").html data
+

@@ -1,9 +1,9 @@
 class Projects::BranchesController < Projects::ApplicationController
   include ActionView::Helpers::SanitizeHelper
   # Authorize
-  before_filter :require_non_empty_project
-  before_filter :authorize_download_code!
-  before_filter :authorize_push_code!, only: [:create, :destroy]
+  before_action :require_non_empty_project
+  before_action :authorize_download_code!
+  before_action :authorize_push_code!, only: [:create, :destroy]
 
   def index
     @sort = params[:sort] || 'name'
@@ -17,7 +17,9 @@ class Projects::BranchesController < Projects::ApplicationController
 
   def create
     branch_name = sanitize(strip_tags(params[:branch_name]))
+    branch_name = Addressable::URI.unescape(branch_name)
     ref = sanitize(strip_tags(params[:ref]))
+    ref = Addressable::URI.unescape(ref)
     result = CreateBranchService.new(project, current_user).
         execute(branch_name, ref)
 
@@ -32,15 +34,14 @@ class Projects::BranchesController < Projects::ApplicationController
   end
 
   def destroy
-    DeleteBranchService.new(project, current_user).execute(params[:id])
-    @branch_name = params[:id]
-
+    @branch_name = Addressable::URI.unescape(params[:id])
+    status = DeleteBranchService.new(project, current_user).execute(@branch_name)
     respond_to do |format|
       format.html do
         redirect_to namespace_project_branches_path(@project.namespace,
                                                     @project)
       end
-      format.js
+      format.js { render status: status[:return_code] }
     end
   end
 end

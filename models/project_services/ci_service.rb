@@ -15,6 +15,7 @@
 #  issues_events         :boolean          default(TRUE)
 #  merge_requests_events :boolean          default(TRUE)
 #  tag_push_events       :boolean          default(TRUE)
+#  note_events           :boolean          default(TRUE), not null
 #
 
 # Base class for CI services
@@ -34,13 +35,13 @@ class CiService < Service
   # Ex.
   #   http://jenkins.example.com:8888/job/test1/scm/bySHA1/12d65c
   #
-  def build_page(sha)
+  def build_page(sha, ref)
     # implement inside child
   end
 
   # Return string with build status or :error symbol
   #
-  # Allowed states: 'success', 'failed', 'running', 'pending'
+  # Allowed states: 'success', 'failed', 'running', 'pending', 'skipped'
   #
   #
   # Ex.
@@ -51,7 +52,7 @@ class CiService < Service
   #   # => 'running'
   #
   #
-  def commit_status(sha)
+  def commit_status(sha, ref)
     # implement inside child
   end
 end

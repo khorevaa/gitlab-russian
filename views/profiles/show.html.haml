@@ -1,9 +1,10 @@
+- page_title "Профиль"
 %h3.page-title
-  Profile Settings
+  = page_title
 %p.light
-  This information will appear on your profile.
+  Эта информация будет отображаться в вашем профиле.
   - if current_user.ldap_user?
-    Some options are unavailable for LDAP accounts
+    Некоторые параметры недоступны для учетных записей LDAP
 %hr
 
 
@@ -20,7 +21,7 @@
         = f.label :name, class: "control-label"
         .col-sm-10
           = f.text_field :name, class: "form-control", required: true
-          %span.help-block Enter your name, so people you know can recognize you.
+          %span.help-block Введите ваше имя, чтобы люди знакомые с вами, могли вас найти.
 
       .form-group
         = f.label :email, class: "control-label"
@@ -28,7 +29,7 @@
           - if @user.ldap_user?
             = f.text_field :email, class: "form-control", required: true, readonly: true
             %span.help-block.light
-              Email is read-only for LDAP user
+              Электронный адрес доступен только для просмотра пользователям LDAP
           - else
             - if @user.temp_oauth_email?
               = f.text_field :email, class: "form-control", required: true, value: nil
@@ -36,11 +37,19 @@
               = f.text_field :email, class: "form-control", required: true
             - if @user.unconfirmed_email.present?
               %span.help-block
-                Please click the link in the confirmation email before continuing, it was sent to
-                %strong #{@user.unconfirmed_email}
+                Пожалуйста, нажмите на ссылку в письме подтверждения перед продолжением. Оно было отправлено
+                = succeed "." do
+                  %strong #{@user.unconfirmed_email}
+                %p
+                = link_to "Повторно отправить подтверждение на электронный адрес", user_confirmation_path(user: { email: @user.unconfirmed_email }), method: :post
 
             - else
-              %span.help-block We also use email for avatar detection if no avatar is uploaded.
+              %span.help-block Мы также используем электронную почту для обнаружения аватара, если он не загружается.
+      .form-group
+        = f.label :public_email, class: "control-label"
+        .col-sm-10
+          = f.select :public_email, options_for_select(@user.all_emails, selected: @user.public_email), {include_blank: 'Не показывать в профиле'}, class: "form-control"
+          %span.help-block Этот электронный адрес будет отображаться в вашем профиле.
       .form-group
         = f.label :skype, class: "control-label"
         .col-sm-10= f.text_field :skype, class: "form-control"
@@ -54,10 +63,13 @@
         = f.label :website_url, 'Website', class: "control-label"
         .col-sm-10= f.text_field :website_url, class: "form-control"
       .form-group
+        = f.label :location, 'Location', class: "control-label"
+        .col-sm-10= f.text_field :location, class: "form-control"
+      .form-group
         = f.label :bio, class: "control-label"
         .col-sm-10
           = f.text_area :bio, rows: 4, class: "form-control", maxlength: 250
-          %span.help-block Tell us about yourself in fewer than 250 characters.
+          %span.help-block Расскажите нам о себе в менее чем 250 символов.
 
     .col-md-5
       .light-well
@@ -67,36 +79,35 @@
           .profile-avatar-form-option
             %p.light
               - if @user.avatar?
-                You can change your avatar here
+                Вы можете изменить свой аватар здесь
                 - if Gitlab.config.gravatar.enabled
                   %br
-                  or remove the current avatar to revert to #{link_to "gravatar.com", "http://gravatar.com"}
+                  или удалить текущий аватар, чтобы вернуться к #{link_to Gitlab.config.gravatar.host, "http://" + Gitlab.config.gravatar.host}
               - else
-                You can upload an avatar here
+                Вы можете загрузить аватар здесь
                 - if Gitlab.config.gravatar.enabled
                   %br
-                  or change it at #{link_to "gravatar.com", "http://gravatar.com"}
+                  или изменить его на #{link_to Gitlab.config.gravatar.host, "http://" + Gitlab.config.gravatar.host}
             %hr
             %a.choose-btn.btn.btn-sm.js-choose-user-avatar-button
               %i.fa.fa-paperclip
-              %span Choose File ...
+              %span Выбрать файл ...
             &nbsp;
-            %span.file_name.js-avatar-filename File name...
+            %span.file_name.js-avatar-filename Имя файла...
             = f.file_field :avatar, class: "js-user-avatar-input hidden"
-            .light The maximum file size allowed is 200KB.
+            .light Максимально разрешенный размер файла – 200 КБ.
             - if @user.avatar?
               %hr
-              = link_to 'Remove avatar', profile_avatar_path, data: { confirm: "Avatar will be removed. Are you sure?"}, method: :delete, class: "btn btn-remove btn-sm remove-avatar"
+              = link_to 'Удалить аватар', profile_avatar_path, data: { confirm: "Аватар, будет удален. Вы уверены?"}, method: :delete, class: "btn btn-remove btn-sm remove-avatar"
 
       - if @user.public_profile?
         .alert.alert-info
-          %h4 Public profile
-          %p Your profile is publicly visible because you joined public project(s)
+          %h4 Публичный профиль
+          %p Ваш профиль публичен, потому что вы присоединились к общему проекту(ам)
 
 
   .row
     .col-md-7
       .form-group
-        .col-sm-2 &nbsp;
-        .col-sm-10
-          = f.submit 'Save changes', class: "btn btn-success"
+        .col-sm-offset-2.col-sm-10
+          = f.submit 'Сохранить изменения', class: "btn btn-success"

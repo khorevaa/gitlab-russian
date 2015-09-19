@@ -1,37 +1,54 @@
+- page_title "Электропочта"
 %h3.page-title
-  Email Settings
+  = page_title
 %p.light
-  Your
-  %b Primary Email
-  will be used for avatar detection and web based operations, such as edits and merges.
-  %br
-  Your
-  %b Notification Email
-  will be used for account notifications.
-  %br
-  All email addresses will be used to identify your commits.
-
+  Контроль электронных адресов, привязанных к вашему аккаунту
 %hr
+
+
+%ul
+  %li
+    Ваш
+    %b основной электронный адрес 
+    будет использоваться для детектирования и веб-операций, таких как правка и слияние.
+  %li
+    Ваш
+    %b электронный адрес уведомлений
+    будет использоваться для уведомлений.
+  %li
+    Ваш
+    %b публичный электронный адрес 
+    будет отображаться в вашем профиле.
+  %li
+    Все электронные адреса будет использоваться для идентификации ваших коммитов.
 
 .panel.panel-default
   .panel-heading
-    Emails (#{@emails.count + 1})
+    Электронные адреса (#{@emails.count + 1})
   %ul.well-list#emails-table
     %li
       %strong= @primary
-      %span.label.label-success Primary Email
+      %span.label.label-success Основной
+      - if @primary === current_user.public_email
+        %span.label.label-info Публичный
+      - if @primary === current_user.notification_email
+        %span.label.label-info Уведомления
     - @emails.each do |email|
       %li
         %strong= email.email
+        - if email.email === current_user.public_email
+          %span.label.label-info Публичный
+        - if email.email === current_user.notification_email
+          %span.label.label-info Уведомления
         %span.cgray
-          added #{time_ago_with_tooltip(email.created_at)}
-        = link_to 'Remove', profile_email_path(email), data: { confirm: 'Are you sure?'}, method: :delete, class: 'btn btn-sm btn-remove pull-right'
+          добавлен #{time_ago_with_tooltip(email.created_at)}
+        = link_to 'Удалить', profile_email_path(email), data: { confirm: 'Вы уверены?'}, method: :delete, class: 'btn btn-sm btn-remove pull-right'
 
-%h4 Add email address
+%h4 Добавление электронного адреса
 = form_for 'email', url: profile_emails_path, html: { class: 'form-horizontal' } do |f|
   .form-group
     = f.label :email, class: 'control-label'
     .col-sm-10
       = f.text_field :email, class: 'form-control'
   .form-actions
-    = f.submit 'Add email address', class: 'btn btn-create'
+    = f.submit 'Добавить электронный адрес', class: 'btn btn-create'

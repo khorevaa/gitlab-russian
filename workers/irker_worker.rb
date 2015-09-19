@@ -19,7 +19,7 @@ class IrkerWorker
       branch = "\x0305#{branch}\x0f"
     end
 
-    # Firsts messages are for branch creation/deletion
+    # First messages are for branch creation/deletion
     send_branch_updates push_data, project, repo_name, committer, branch
 
     # Next messages are for commits
@@ -34,7 +34,7 @@ class IrkerWorker
   def init_perform(set, chans, colors)
     @colors = colors
     @channels = chans
-    start_connection set['server_ip'], set['server_port']
+    start_connection set['server_host'], set['server_port']
   end
 
   def start_connection(irker_server, irker_port)
@@ -57,9 +57,9 @@ class IrkerWorker
   end
 
   def send_branch_updates(push_data, project, repo_name, committer, branch)
-    if push_data['before'] == Gitlab::Git::BLANK_SHA
+    if Gitlab::Git.blank_ref?(push_data['before'])
       send_new_branch project, repo_name, committer, branch
-    elsif push_data['after'] == Gitlab::Git::BLANK_SHA
+    elsif Gitlab::Git.blank_ref?(push_data['after'])
       send_del_branch repo_name, committer, branch
     end
   end
@@ -83,7 +83,7 @@ class IrkerWorker
     return if push_data['total_commits_count'] == 0
 
     # Next message is for number of commit pushed, if any
-    if push_data['before'] == Gitlab::Git::BLANK_SHA
+    if Gitlab::Git.blank_ref?(push_data['before'])
       # Tweak on push_data["before"] in order to have a nice compare URL
       push_data['before'] = before_on_new_branch push_data, project
     end
@@ -137,8 +137,7 @@ class IrkerWorker
   end
 
   def commit_from_id(project, id)
-    commit = Gitlab::Git::Commit.find(project.repository, id)
-    Commit.new(commit)
+    project.commit(id)
   end
 
   def files_count(commit)

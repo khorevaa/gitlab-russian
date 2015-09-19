@@ -1,12 +1,12 @@
 class @Project
   constructor: ->
     # Git clone panel switcher
-    scope = $ '.git-clone-holder'
-    if scope.length > 0
-      $('a, button', scope).click ->
-        $('a, button', scope).removeClass 'active'
+    cloneHolder = $('.git-clone-holder')
+    if cloneHolder.length
+      $('a, button', cloneHolder).click ->
+        $('a, button', cloneHolder).removeClass 'active'
         $(@).addClass 'active'
-        $('#project_clone', scope).val $(@).data 'clone'
+        $('#project_clone', cloneHolder).val $(@).data 'clone'
         $(".clone").text("").append $(@).data 'clone'
 
     # Ref switcher

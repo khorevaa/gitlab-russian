@@ -40,6 +40,15 @@
       font-size: inherit;
     }
 
+    .div-dropzone-progress {
+      position: absolute;
+      top: 7px;
+      left: -40px;
+      width: 35px;
+      font-size: 13px;
+      text-align: right;
+    }
+
     .dz-preview {
       display: none;
     }
@@ -50,6 +59,22 @@
   margin-top: 5px;
   margin-bottom: 0;
   transition: opacity 200ms ease-in-out;
+}
+
+.md-area {
+  position: relative;
+}
+
+.md-header ul {
+  float: left;
+}
+
+.referenced-users {
+  padding: 10px 0;
+  color: #999;
+  margin-left: 10px;
+  margin-top: 1px;
+  margin-right: 130px;
 }
 
 .md-preview-holder {

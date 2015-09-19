@@ -18,6 +18,8 @@ class RepositoryImportWorker
                             Gitlab::GitlabImport::Importer.new(project).execute
                           elsif project.import_type == 'bitbucket'
                             Gitlab::BitbucketImport::Importer.new(project).execute
+                          elsif project.import_type == 'google_code'
+                            Gitlab::GoogleCodeImport::Importer.new(project).execute
                           else
                             true
                           end
@@ -26,7 +28,7 @@ class RepositoryImportWorker
     project.import_finish
     project.save
     project.satellite.create unless project.satellite.exists?
-    project.update_repository_size
+    ProjectCacheWorker.perform_async(project.id)
     Gitlab::BitbucketImport::KeyDeleter.new(project).execute if project.import_type == 'bitbucket'
   end
 end

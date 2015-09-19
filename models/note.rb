@@ -22,21 +22,26 @@ require 'file_size_validator'
 
 class Note < ActiveRecord::Base
   include Mentionable
+  include Gitlab::CurrentSettings
+  include Participable
 
   default_value_for :system, false
 
   attr_mentionable :note
+  participant :author, :mentioned_users
 
   belongs_to :project
   belongs_to :noteable, polymorphic: true
   belongs_to :author, class_name: "User"
+  belongs_to :updated_by, class_name: "User"
 
   delegate :name, to: :project, prefix: true
   delegate :name, :email, to: :author, prefix: true
 
   validates :note, :project, presence: true
   validates :line_code, format: { with: /\A[a-z0-9]+_\d+_\d+\Z/ }, allow_blank: true
-  validates :attachment, file_size: { maximum: 10.megabytes.to_i }
+  # Attachments are deprecated and are handled by Markdown uploader
+  validates :attachment, file_size: { maximum: :max_attachment_size }
 
   validates :noteable_id, presence: true, if: ->(n) { n.noteable_type.present? && n.noteable_type != 'Commit' }
   validates :commit_id, presence: true, if: ->(n) { n.noteable_type == 'Commit' }
@@ -48,6 +53,7 @@ class Note < ActiveRecord::Base
   scope :inline, ->{ where("line_code IS NOT NULL") }
   scope :not_inline, ->{ where(line_code: [nil, '']) }
   scope :system, ->{ where(system: true) }
+  scope :user, ->{ where(system: false) }
   scope :common, ->{ where(noteable_type: ["", nil]) }
   scope :fresh, ->{ order(created_at: :asc, id: :asc) }
   scope :inc_author_project, ->{ includes(:project, :author) }
@@ -58,145 +64,6 @@ class Note < ActiveRecord::Base
   after_update :set_references
 
   class << self
-    def create_status_change_note(noteable, project, author, status, source)
-      body = "_Status changed to #{status}#{' by ' + source.gfm_reference if source}_"
-
-      create(
-        noteable: noteable,
-        project: project,
-        author: author,
-        note: body,
-        system: true
-      )
-    end
-
-    # +noteable+ was referenced from +mentioner+, by including GFM in either
-    # +mentioner+'s description or an associated Note.
-    # Create a system Note associated with +noteable+ with a GFM back-reference
-    # to +mentioner+.
-    def create_cross_reference_note(noteable, mentioner, author, project)
-      gfm_reference = mentioner_gfm_ref(noteable, mentioner, project)
-
-      note_options = {
-        project: project,
-        author: author,
-        note: cross_reference_note_content(gfm_reference),
-        system: true
-      }
-
-      if noteable.kind_of?(Commit)
-        note_options.merge!(noteable_type: 'Commit', commit_id: noteable.id)
-      else
-        note_options.merge!(noteable: noteable)
-      end
-
-      create(note_options) unless cross_reference_disallowed?(noteable, mentioner)
-    end
-
-    def create_milestone_change_note(noteable, project, author, milestone)
-      body = if milestone.nil?
-               '_Milestone removed_'
-             else
-               "_Milestone changed to #{milestone.title}_"
-             end
-
-      create(
-        noteable: noteable,
-        project: project,
-        author: author,
-        note: body,
-        system: true
-      )
-    end
-
-    def create_assignee_change_note(noteable, project, author, assignee)
-      body = assignee.nil? ? '_Assignee removed_' : "_Reassigned to @#{assignee.username}_"
-
-      create({
-        noteable: noteable,
-        project: project,
-        author: author,
-        note: body,
-        system: true
-      })
-    end
-
-    def create_labels_change_note(noteable, project, author, added_labels, removed_labels)
-      labels_count = added_labels.count + removed_labels.count
-      added_labels = added_labels.map{ |label| "~#{label.id}" }.join(' ')
-      removed_labels = removed_labels.map{ |label| "~#{label.id}" }.join(' ')
-      message = ''
-
-      if added_labels.present?
-        message << "added #{added_labels}"
-      end
-
-      if added_labels.present? && removed_labels.present?
-        message << ' and '
-      end
-
-      if removed_labels.present?
-        message << "removed #{removed_labels}"
-      end
-
-      message << ' ' << 'label'.pluralize(labels_count)
-      body = "_#{message.capitalize}_"
-
-      create(
-        noteable: noteable,
-        project: project,
-        author: author,
-        note: body,
-        system: true
-      )
-    end
-
-    def create_new_commits_note(merge_request, project, author, new_commits, existing_commits = [], oldrev = nil)
-      total_count = new_commits.length + existing_commits.length
-      commits_text = ActionController::Base.helpers.pluralize(total_count, 'commit')
-      body = "Added #{commits_text}:\n\n"
-
-      if existing_commits.length > 0
-        commit_ids =
-          if existing_commits.length == 1
-            existing_commits.first.short_id
-          else
-            if oldrev
-              "#{Commit.truncate_sha(oldrev)}...#{existing_commits.last.short_id}"
-            else
-              "#{existing_commits.first.short_id}..#{existing_commits.last.short_id}"
-            end
-          end
-
-        commits_text = ActionController::Base.helpers.pluralize(existing_commits.length, 'commit')
-
-        branch = 
-          if merge_request.for_fork?
-            "#{merge_request.target_project_namespace}:#{merge_request.target_branch}"
-          else
-            merge_request.target_branch
-          end
-
-        message = "* #{commit_ids} - _#{commits_text} from branch `#{branch}`_"
-        body << message
-        body << "\n"
-      end
-
-      new_commits.each do |commit|
-        message = "* #{commit.short_id} - #{commit.title}"
-        body << message
-        body << "\n"
-      end
-
-      create(
-        noteable: merge_request,
-        project: project,
-        author: author,
-        note: body,
-        system: true
-      )
-    end
-
     def discussions_from_notes(notes)
       discussion_ids = []
       discussions = []
@@ -222,109 +89,17 @@ class Note < ActiveRecord::Base
       [:discussion, type.try(:underscore), id, line_code].join("-").to_sym
     end
 
-    # Determine if cross reference note should be created.
-    # eg. mentioning a commit in MR comments which exists inside a MR
-    # should not create "mentioned in" note.
-    def cross_reference_disallowed?(noteable, mentioner)
-      if mentioner.kind_of?(MergeRequest)
-        mentioner.commits.map(&:id).include? noteable.id
-      end
-    end
-
-    # Determine whether or not a cross-reference note already exists.
-    def cross_reference_exists?(noteable, mentioner)
-      gfm_reference = mentioner_gfm_ref(noteable, mentioner)
-      notes = if noteable.is_a?(Commit)
-                where(commit_id: noteable.id)
-              else
-                where(noteable_id: noteable.id)
-              end
-
-      notes.where('note like ?', cross_reference_note_content(gfm_reference)).
-        system.any?
-    end
-
     def search(query)
       where("note like :query", query: "%#{query}%")
     end
-
-    def cross_reference_note_prefix
-      '_mentioned in '
-    end
-
-    private
-
-    def cross_reference_note_content(gfm_reference)
-      cross_reference_note_prefix + "#{gfm_reference}_"
-    end
-
-    # Prepend the mentioner's namespaced project path to the GFM reference for
-    # cross-project references.  For same-project references, return the
-    # unmodified GFM reference.
-    def mentioner_gfm_ref(noteable, mentioner, project = nil)
-      if mentioner.is_a?(Commit)
-        if project.nil?
-          return mentioner.gfm_reference.sub('commit ', 'commit %')
-        else
-          mentioning_project = project
-        end
-      else
-        mentioning_project = mentioner.project
-      end
-
-      noteable_project_id = noteable_project_id(noteable, mentioning_project)
-
-      full_gfm_reference(mentioning_project, noteable_project_id, mentioner)
-    end
-
-    # Return the ID of the project that +noteable+ belongs to, or nil if
-    # +noteable+ is a commit and is not part of the project that owns
-    # +mentioner+.
-    def noteable_project_id(noteable, mentioning_project)
-      if noteable.is_a?(Commit)
-        if mentioning_project.repository.commit(noteable.id)
-          # The noteable commit belongs to the mentioner's project
-          mentioning_project.id
-        else
-          nil
-        end
-      else
-        noteable.project.id
-      end
-    end
-
-    # Return the +mentioner+ GFM reference.  If the mentioner and noteable
-    # projects are not the same, add the mentioning project's path to the
-    # returned value.
-    def full_gfm_reference(mentioning_project, noteable_project_id, mentioner)
-      if mentioning_project.id == noteable_project_id
-        mentioner.gfm_reference
-      else
-        if mentioner.is_a?(Commit)
-          mentioner.gfm_reference.sub(
-            /(commit )/,
-            "\\1#{mentioning_project.path_with_namespace}@"
-          )
-        else
-          mentioner.gfm_reference.sub(
-            /(issue |merge request )/,
-            "\\1#{mentioning_project.path_with_namespace}"
-          )
-        end
-      end
-    end
-  end
-
-  def commit_author
-    @commit_author ||=
-      project.team.users.find_by(email: noteable.author_email) ||
-      project.team.users.find_by(name: noteable.author_name)
-  rescue
-    nil
   end
 
   def cross_reference?
-    note.start_with?(self.class.cross_reference_note_prefix)
+    system && SystemNoteService.cross_reference?(note)
+  end
+
+  def max_attachment_size
+    current_application_settings.max_attachment_size.megabytes.to_i
   end
 
   def find_diff
@@ -342,7 +117,7 @@ class Note < ActiveRecord::Base
   def set_diff
     # First lets find notes with same diff
     # before iterating over all mr diffs
-    diff = Note.where(noteable_id: self.noteable_id, noteable_type: self.noteable_type, line_code: self.line_code).last.try(:diff)
+    diff = diff_for_line_code unless for_merge_request?
     diff ||= find_diff
 
     self.st_diff = diff.to_hash if diff
@@ -350,6 +125,10 @@ class Note < ActiveRecord::Base
 
   def diff
     @diff ||= Gitlab::Git::Diff.new(st_diff) if st_diff.respond_to?(:map)
+  end
+
+  def diff_for_line_code
+    Note.where(noteable_id: noteable_id, noteable_type: noteable_type, line_code: line_code).last.try(:diff)
   end
 
   # Check if such line of code exists in merge request diff
@@ -445,7 +224,7 @@ class Note < ActiveRecord::Base
         prev_match_line = line
       else
         prev_lines << line
-        
+
         break if generate_line_code(line) == self.line_code
 
         prev_lines.shift if prev_lines.length >= max_number_of_lines
@@ -461,16 +240,6 @@ class Note < ActiveRecord::Base
 
   def discussion_id
     @discussion_id ||= Note.build_discussion_id(noteable_type, noteable_id || commit_id, line_code)
-  end
-
-  # Returns true if this is a downvote note,
-  # otherwise false is returned
-  def downvote?
-    votable? && (note.start_with?('-1') ||
-                 note.start_with?(':-1:') ||
-                 note.start_with?(':thumbsdown:') ||
-                 note.start_with?(':thumbs_down_sign:')
-                )
   end
 
   def for_commit?
@@ -504,7 +273,7 @@ class Note < ActiveRecord::Base
   # override to return commits, which are not active record
   def noteable
     if for_commit?
-      project.repository.commit(commit_id)
+      project.commit(commit_id)
     else
       super
     end
@@ -514,14 +283,18 @@ class Note < ActiveRecord::Base
     nil
   end
 
-  # Returns true if this is an upvote note,
-  # otherwise false is returned
+  DOWNVOTES = %w(-1 :-1: :thumbsdown: :thumbs_down_sign:)
+
+  # Check if the note is a downvote
+  def downvote?
+    votable? && note.start_with?(*DOWNVOTES)
+  end
+
+  UPVOTES = %w(+1 :+1: :thumbsup: :thumbs_up_sign:)
+
+  # Check if the note is an upvote
   def upvote?
-    votable? && (note.start_with?('+1') ||
-                 note.start_with?(':+1:') ||
-                 note.start_with?(':thumbsup:') ||
-                 note.start_with?(':thumbs_up_sign:')
-                )
+    votable? && note.start_with?(*UPVOTES)
   end
 
   def superceded?(notes)
@@ -549,8 +322,8 @@ class Note < ActiveRecord::Base
   end
 
   # Mentionable override.
-  def gfm_reference
-    noteable.gfm_reference
+  def gfm_reference(from_project = nil)
+    noteable.gfm_reference(from_project)
   end
 
   # Mentionable override.
@@ -584,7 +357,11 @@ class Note < ActiveRecord::Base
   end
 
   def set_references
-    notice_added_references(project, author)
+    create_new_cross_references!(project, author)
+  end
+
+  def system?
+    read_attribute(:system)
   end
 
   def editable?

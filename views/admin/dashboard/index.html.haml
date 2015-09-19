@@ -1,18 +1,18 @@
 .admin-dashboard
   .row
     .col-md-4
-      %h4 Statistics
+      %h4 Статистика
       %hr
       %p
-        Forks
+        Форки
         %span.light.pull-right
           = ForkedProjectLink.count
       %p
-        Issues
+        Вопросы
         %span.light.pull-right
           = Issue.count
       %p
-        Merge Requests
+        Запросы слияния
         %span.light.pull-right
           = MergeRequest.count
       %p
@@ -20,27 +20,27 @@
         %span.light.pull-right
           = Note.count
       %p
-        Snippets
+        Фрагменты
         %span.light.pull-right
           = Snippet.count
       %p
-        SSH Keys
+        SSH ключи
         %span.light.pull-right
           = Key.count
       %p
-        Milestones
+        Итерации
         %span.light.pull-right
           = Milestone.count
       %p
-        Active Users
+        Активные пользователи
         %span.light.pull-right
           = User.active.count
     .col-md-4
       %h4
-        Features
+        Особенности
       %hr
       %p
-        Sign up
+        Регистрация
         %span.light.pull-right
           = boolean_to_icon signup_enabled?
       %p
@@ -56,7 +56,12 @@
         %span.light.pull-right
           = boolean_to_icon Gitlab.config.omniauth.enabled
     .col-md-4
-      %h4 Components
+      %h4
+        Компоненты
+        - if current_application_settings.version_check_enabled
+          .pull-right
+            = version_status_badge
+
       %hr
       %p
         GitLab
@@ -83,32 +88,32 @@
   .row
     .col-sm-4
       .light-well
-        %h4 Projects
+        %h4 Проекты
         .data
           = link_to admin_namespaces_projects_path do
             %h1= Project.count
           %hr
-          = link_to('New Project', new_project_path, class: "btn btn-new")
+          = link_to('Новый проект', new_project_path, class: "btn btn-new")
     .col-sm-4
       .light-well
-        %h4 Users
+        %h4 Пользователи
         .data
           = link_to admin_users_path do
             %h1= User.count
           %hr
-          = link_to 'New User', new_admin_user_path, class: "btn btn-new"
+          = link_to 'Новый пользователь', new_admin_user_path, class: "btn btn-new"
     .col-sm-4
       .light-well
-        %h4 Groups
+        %h4 Группы
         .data
           = link_to admin_groups_path do
             %h1= Group.count
           %hr
-          = link_to 'New Group', new_admin_group_path, class: "btn btn-new"
+          = link_to 'Новая группа', new_admin_group_path, class: "btn btn-new"
 
   .row.prepend-top-10
     .col-md-4
-      %h4 Latest projects
+      %h4 Последние проекты
       %hr
       - @projects.each do |project|
         %p
@@ -117,7 +122,7 @@
             #{time_ago_with_tooltip(project.created_at)}
 
     .col-md-4
-      %h4 Latest users
+      %h4 Последние пользователи
       %hr
       - @users.each do |user|
         %p
@@ -127,7 +132,7 @@
             #{time_ago_with_tooltip(user.created_at)}
 
     .col-md-4
-      %h4 Latest groups
+      %h4 Последние группы
       %hr
       - @groups.each do |group|
         %p

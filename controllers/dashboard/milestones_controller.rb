@@ -1,5 +1,5 @@
-class Dashboard::MilestonesController < ApplicationController
-  before_filter :load_projects
+class Dashboard::MilestonesController < Dashboard::ApplicationController
+  before_action :load_projects
 
   def index
     project_milestones = case params[:state]

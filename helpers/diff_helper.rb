@@ -7,14 +7,23 @@ module DiffHelper
     end
   end
 
-  def safe_diff_files(diffs)
-    diffs.first(allowed_diff_size).map do |diff|
-      Gitlab::Diff::File.new(diff)
+  def allowed_diff_lines
+    if diff_hard_limit_enabled?
+      Commit::DIFF_HARD_LIMIT_LINES
+    else
+      Commit::DIFF_SAFE_LINES
     end
   end
 
-  def show_diff_size_warning?(diffs)
-    diffs.size > allowed_diff_size
+  def safe_diff_files(diffs)
+    lines = 0
+    safe_files = []
+    diffs.first(allowed_diff_size).each do |diff|
+      lines += diff.diff.lines.count
+      break if lines > allowed_diff_lines
+      safe_files << Gitlab::Diff::File.new(diff)
+    end
+    safe_files
   end
 
   def diff_hard_limit_enabled?
@@ -92,6 +101,10 @@ module DiffHelper
     (bottom) ? 'js-unfold-bottom' : ''
   end
 
+  def unfold_class(unfold)
+    (unfold) ? 'unfold js-unfold' : ''
+  end
+
   def diff_line_content(line)
     if line.blank?
       " &nbsp;"
@@ -101,7 +114,7 @@ module DiffHelper
   end
 
   def line_comments
-    @line_comments ||= @line_notes.group_by(&:line_code)
+    @line_comments ||= @line_notes.select(&:active?).group_by(&:line_code)
   end
 
   def organize_comments(type_left, type_right, line_code_left, line_code_right)
@@ -121,6 +134,8 @@ module DiffHelper
   def inline_diff_btn
     params_copy = params.dup
     params_copy[:view] = 'inline'
+    # Always use HTML to handle case where JSON diff rendered this button
+    params_copy.delete(:format)
 
     link_to url_for(params_copy), id: "commit-diff-viewtype", class: (params[:view] != 'parallel' ? 'btn btn-sm active' : 'btn btn-sm') do
       'Inline'
@@ -130,14 +145,16 @@ module DiffHelper
   def parallel_diff_btn
     params_copy = params.dup
     params_copy[:view] = 'parallel'
+    # Always use HTML to handle case where JSON diff rendered this button
+    params_copy.delete(:format)
 
     link_to url_for(params_copy), id: "commit-diff-viewtype", class: (params[:view] == 'parallel' ? 'btn active btn-sm' : 'btn btn-sm') do
       'Side-by-side'
     end
   end
 
-  def submodule_link(blob, ref)
-    tree, commit = submodule_links(blob, ref)
+  def submodule_link(blob, ref, repository = @repository)
+    tree, commit = submodule_links(blob, ref, repository)
     commit_id = if commit.nil?
                   blob.id[0..10]
                 else

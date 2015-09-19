@@ -6,19 +6,36 @@
           %p= msg
 
   %fieldset
-    %legend Возможности
+    %legend Видимость и контроль доступа
+    .form-group
+      = f.label :default_branch_protection, class: 'control-label col-sm-2'
+      .col-sm-10
+        = f.select :default_branch_protection, options_for_select(Gitlab::Access.protection_options, @application_setting.default_branch_protection), {}, class: 'form-control'
+    .form-group.project-visibility-level-holder
+      = f.label :default_project_visibility, class: 'control-label col-sm-2'
+      .col-sm-10
+        = render('shared/visibility_radios', model_method: :default_project_visibility, form: f, selected_level: @application_setting.default_project_visibility, form_model: 'Project')
+    .form-group.project-visibility-level-holder
+      = f.label :default_snippet_visibility, class: 'control-label col-sm-2'
+      .col-sm-10
+        = render('shared/visibility_radios', model_method: :default_snippet_visibility, form: f, selected_level: @application_setting.default_snippet_visibility, form_model: 'Snippet')
+    .form-group
+      = f.label :restricted_visibility_levels, class: 'control-label col-sm-2'
+      .col-sm-10
+        - data_attrs = { toggle: 'buttons' }
+        .btn-group{ data: data_attrs }
+          - restricted_level_checkboxes('restricted-visibility-help').each do |level|
+            = level
+        %span.help-block#restricted-visibility-help Выбранный уровень не может использоваться пользователями без прав администратора для проектов или фрагментов
     .form-group
       .col-sm-offset-2.col-sm-10
         .checkbox
-          = f.label :signup_enabled do
-            = f.check_box :signup_enabled
-            Регистрация включена
-    .form-group
-      .col-sm-offset-2.col-sm-10
-        .checkbox
-          = f.label :signin_enabled do
-            = f.check_box :signin_enabled
-            Авторизация включена
+          = f.label :version_check_enabled do
+            = f.check_box :version_check_enabled
+            Проверка версий включена
+
+  %fieldset
+    %legend Аккаунт и настройки ограничений
     .form-group
       .col-sm-offset-2.col-sm-10
         .checkbox
@@ -30,35 +47,63 @@
         .checkbox
           = f.label :twitter_sharing_enabled do
             = f.check_box :twitter_sharing_enabled, :'aria-describedby' => 'twitter_help_block'
-            %strong Twitter включен
-          %span.help-block#twitter_help_block Показать пользователям кнопку, для возможности поделиться их вновь созданными публичными или внутренними проектами в Twitter
-  %fieldset
-    %legend Разное
+            Twitter включен
+          %span.help-block#twitter_help_block Показать пользователям кнопку Twitter, для возможности делиться своими созданными открытыми или внутренними проектами
     .form-group
       = f.label :default_projects_limit, class: 'control-label col-sm-2'
       .col-sm-10
         = f.number_field :default_projects_limit, class: 'form-control'
     .form-group
-      = f.label :default_branch_protection, class: 'control-label col-sm-2'
+      = f.label :max_attachment_size, 'Максимальный размер вложений (MB)', class: 'control-label col-sm-2'
       .col-sm-10
-        = f.select :default_branch_protection, options_for_select(Gitlab::Access.protection_options, @application_setting.default_branch_protection), {}, class: 'form-control'
+        = f.number_field :max_attachment_size, class: 'form-control'
     .form-group
-      = f.label :restricted_visibility_levels, class: 'control-label col-sm-2'
+      = f.label :session_expire_delay, 'Длительность сеанса (в минутах)', class: 'control-label col-sm-2'
       .col-sm-10
-        - data_attrs = { toggle: 'buttons' }
-        .btn-group{ data: data_attrs }
-          - restricted_level_checkboxes('restricted-visibility-help').each do |level|
-            = level
-        %span.help-block#restricted-visibility-help Выбранные уровни не могут быть использованы без прав администратора для проектов или фрагментов
+        = f.number_field :session_expire_delay, class: 'form-control'
+        %span.help-block#session_expire_delay_help_block Требуется перезагрузка GitLab для применения изменений
     .form-group
-      = f.label :home_page_url, class: 'control-label col-sm-2'
+      = f.label :user_oauth_applications, 'Пользовательские OAuth приложения', class: 'control-label col-sm-2'
       .col-sm-10
-        = f.text_field :home_page_url, class: 'form-control', placeholder: 'http://company.example.com', :'aria-describedby' => 'home_help_block'
+        .checkbox
+          = f.label :user_oauth_applications do
+            = f.check_box :user_oauth_applications
+            Позволяет пользователям регистрировать любое приложение, чтобы использовать GitLab в качестве поставщика OAuth
+
+  %fieldset
+    %legend Ограничения входа 
+    .form-group
+      .col-sm-offset-2.col-sm-10
+        .checkbox
+          = f.label :signup_enabled do
+            = f.check_box :signup_enabled
+            Регистрация включена
+    .form-group
+      .col-sm-offset-2.col-sm-10
+        .checkbox
+          = f.label :signin_enabled do
+            = f.check_box :signin_enabled
+            Вход включен
+    .form-group
+      = f.label :restricted_signup_domains, 'Домены, ограниченные в регистраций', class: 'control-label col-sm-2'
+      .col-sm-10
+        = f.text_area :restricted_signup_domains_raw, placeholder: 'domain.ru', class: 'form-control'
+        .help-block Только пользователи с адресами электронной почты, которым соответствуют эти домены, будут иметь возможность зарегистрироваться. Маски имен разрешены. Используйте отдельные строки для нескольких записей. Например: domain.ru, *.domain.ru
+    .form-group
+      = f.label :home_page_url, 'URL-адрес домашней страницы', class: 'control-label col-sm-2'
+      .col-sm-10
+        = f.text_field :home_page_url, class: 'form-control', placeholder: 'http://company.example.ru', :'aria-describedby' => 'home_help_block'
         %span.help-block#home_help_block Мы будем перенаправлять не авторизированных пользователей на эту страницу
+    .form-group
+      = f.label :after_sign_out_path, class: 'control-label col-sm-2'
+      .col-sm-10
+        = f.text_field :after_sign_out_path, class: 'form-control', placeholder: 'http://company.example.ru', :'aria-describedby' => 'after_sign_out_path_help_block'
+        %span.help-block#after_sign_out_path_help_block Мы будем перенаправлять пользователей на эту страницу после выхода из системы
     .form-group
       = f.label :sign_in_text, class: 'control-label col-sm-2'
       .col-sm-10
         = f.text_area :sign_in_text, class: 'form-control', rows: 4
-        .help-block Markdown enabled
+        .help-block Доступен облегчённый язык разметки Markdown
+
   .form-actions
     = f.submit 'Сохранить', class: 'btn btn-primary'

@@ -1,12 +1,12 @@
 .login-box
   - if signup_enabled?
     .login-heading
-      %h3 Уже зарегистрированы? Войти
+      %h3 Existing user? Sign in
   - else
     .login-heading
-      %h3 Вход
+      %h3 Sign in
   .login-body
-    - if ldap_enabled?
+    - if form_based_providers.any?
       %ul.nav.nav-tabs
         - @ldap_servers.each_with_index do |server, i|
           %li{class: (:active if i.zero?)}

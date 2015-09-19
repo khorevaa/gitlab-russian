@@ -1,16 +1,16 @@
+- page_title "Публичные фрагменты"
 %h3.page-title
-  Публичные сниппеты
+  Публичные фрагменты
 
   .pull-right
-    
     - if current_user
-      = link_to new_snippet_path, class: "btn btn-new btn-grouped", title: "New Snippet" do
-        Добавить новый сниппет
+      = link_to new_snippet_path, class: "btn btn-new btn-grouped", title: "Новый фрагмент" do
+        Добавить новый фрагмент
       = link_to user_snippets_path(current_user), class: "btn btn-grouped"  do
-        Мои сниппеты
+        Ваши фрагменты
 
 %p.light
-  Здесь перечислены публичные сниппеты, созданные вами и другими пользователями
+  Здесь будут перечислены созданные вами или другими пользователями публичные фрагменты
 
 %hr
 = render 'snippets'

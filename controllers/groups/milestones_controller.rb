@@ -1,7 +1,5 @@
-class Groups::MilestonesController < ApplicationController
-  layout 'group'
-
-  before_filter :authorize_group_milestone!, only: :update
+class Groups::MilestonesController < Groups::ApplicationController
+  before_action :authorize_group_milestone!, only: :update
 
   def index
     project_milestones = case params[:state]
@@ -51,6 +49,6 @@ class Groups::MilestonesController < ApplicationController
   end
 
   def authorize_group_milestone!
-    return render_404 unless can?(current_user, :manage_group, group)
+    return render_404 unless can?(current_user, :admin_group, group)
   end
 end

@@ -89,6 +89,10 @@
     td.blame-commit {
       background: #f9f9f9;
       min-width: 350px;
+
+      .commit-author-link {
+        color: #888;
+      }
     }
     td.blame-numbers {
       pre {
@@ -106,20 +110,15 @@
   }
 }
 
-.tree-download-holder .btn {
-  padding: 4px 12px;
-}
-
 .tree-ref-holder {
   float: left;
-  margin-right: 6px;
-
-  .select2-container .select2-choice, .select2-container.select2-drop-above .select2-choice {
-    padding: 4px 12px;
-  }
+  margin-right: 15px;
 }
 
 .readme-holder {
+  margin: 0 auto;
+  max-width: $readable-width;
+
   .readme-file-title {
     font-size: 14px;
     font-weight: bold;

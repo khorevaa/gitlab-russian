@@ -7,10 +7,12 @@
 module Issuable
   extend ActiveSupport::Concern
   include Mentionable
+  include Participable
 
   included do
     belongs_to :author, class_name: "User"
     belongs_to :assignee, class_name: "User"
+    belongs_to :updated_by, class_name: "User"
     belongs_to :milestone
     has_many :notes, as: :noteable, dependent: :destroy
     has_many :label_links, as: :target, dependent: :destroy
@@ -45,6 +47,7 @@ module Issuable
              prefix: true
 
     attr_mentionable :title, :description
+    participant :author, :assignee, :notes, :mentioned_users
   end
 
   module ClassMethods
@@ -117,22 +120,6 @@ module Issuable
     upvotes + downvotes
   end
 
-  # Return all users participating on the discussion
-  def participants
-    users = []
-    users << author
-    users << assignee if is_assigned?
-    mentions = []
-    mentions << self.mentioned_users
-
-    notes.each do |note|
-      users << note.author
-      mentions << note.mentioned_users
-    end
-
-    users.concat(mentions.reduce([], :|)).uniq
-  end
-
   def subscribed?(user)
     subscription = subscriptions.find_by_user_id(user.id)
 
@@ -140,7 +127,7 @@ module Issuable
       return subscription.subscribed
     end
 
-    participants.include?(user)
+    participants(user).include?(user)
   end
 
   def toggle_subscription(user)
@@ -171,6 +158,16 @@ module Issuable
         find_or_create_by(title: label_name.strip)
       self.labels << label
     end
+  end
+
+  # Convert this Issuable class name to a format usable by Ability definitions
+  #
+  # Examples:
+  #
+  #   issuable.class           # => MergeRequest
+  #   issuable.to_ability_name # => "merge_request"
+  def to_ability_name
+    self.class.to_s.underscore
   end
 
   private

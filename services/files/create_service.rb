@@ -3,7 +3,7 @@ require_relative "base_service"
 module Files
   class CreateService < BaseService
     def execute
-      allowed = Gitlab::GitAccess.can_push_to_branch?(current_user, project, ref)
+      allowed = Gitlab::GitAccess.new(current_user, project).can_push_to_branch?(ref)
 
       unless allowed
         return error("You are not allowed to create file in this branch")
@@ -12,10 +12,10 @@ module Files
       file_name = File.basename(path)
       file_path = path
 
-      unless file_name =~ Gitlab::Regex.path_regex
+      unless file_name =~ Gitlab::Regex.file_name_regex
         return error(
           'Your changes could not be committed, because the file name ' +
-          Gitlab::Regex.path_regex_message
+          Gitlab::Regex.file_name_regex_message
         )
       end
 

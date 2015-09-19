@@ -1,12 +1,13 @@
+- page_title "Фрагменты", @user.name
 %h3.page-title
   = image_tag avatar_icon(@user.email), class: "avatar s24"
   = @user.name
   %span
     \/
-    Сниппеты
+    Фрагменты
   - if current_user
-    = link_to new_snippet_path, class: "btn btn-sm add_new pull-right", title: "Новый сниппет" do
-      Добавить новый сниппет
+    = link_to new_snippet_path, class: "btn btn-sm add_new pull-right", title: "Новый фрагмент" do
+      Добавить новый фрагмент
 
 %hr
 

@@ -117,7 +117,7 @@
         color: #888;
         text-shadow: 0 1px 1px #fff;
       }
-      i[class~="fa"] {
+      i.fa {
         line-height: 14px;
       }
     }
@@ -137,6 +137,12 @@
   color: #666;
 }
 
+.nav-pills > .active > a > span > .badge {
+  background-color: #fff;
+  color: $gl-primary;
+}
+
+
 /**
  * fix to keep tooltips position in top navigation bar
  *
@@ -152,6 +158,8 @@
  */
 .panel {
   .panel-heading {
+    font-weight: bold;
+
     .panel-head-actions {
       position: relative;
       top: -5px;
@@ -180,6 +188,7 @@
     .panel-heading {
       padding: 6px 15px;
       font-size: 13px;
+      font-weight: normal;
       a {
         color: #777;
       }

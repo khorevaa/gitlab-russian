@@ -25,28 +25,16 @@
       display: inline-block;
     }
 
-    .issue-actions {
-      display: none;
-      position: absolute;
-      top: 10px;
-      right: 15px;
-    }
-
-    &:hover {
-      .issue-actions {
-        display: block;
-      }
+    .issue-no-comments {
+      opacity: 0.5;
     }
   }
 }
 
 .check-all-holder {
-  height: 36px;
+  line-height: 36px;
   float: left;
-  margin-right: 12px;
-  padding: 6px 15px;
-  border: 1px solid #ccc;
-  @include border-radius(4px);
+  margin-right: 15px;
 }
 
 .issues_content {
@@ -59,31 +47,8 @@
   }
 }
 
-@media (min-width: 800px)  { .issues_filters select { width: 160px; }  }
-@media (min-width: 1200px) { .issues_filters select { width: 220px; }  }
-
-@media (min-width: 800px)  { .issues_bulk_update .select2-container { min-width: 120px; }  }
-@media (min-width: 1200px) { .issues_bulk_update .select2-container { min-width: 160px; }  }
-
-.issues_bulk_update {
-  .select2-container .select2-choice {
-    color: #444 !important;
-    font-weight: 500;
-  }
-}
-
-#update_status {
-  width: 100px;
-}
-
 .participants {
   margin-bottom: 20px;
-}
-
-.issues_bulk_update {
-  .select2-container {
-    text-shadow: none;
-  }
 }
 
 .issue-search-form {
@@ -119,12 +84,12 @@ form.edit-issue {
   }
 
   &.closed {
-    background: #F5f5f5;
+    background: #F9F9F9;
     border-color: #E5E5E5;
   }
 
   &.merged {
-    background: #F5f5f5;
+    background: #F9F9F9;
     border-color: #E5E5E5;
   }
 }
@@ -177,6 +142,6 @@ h2.issue-title {
   font-weight: bold;
 }
 
-.context .select2-container {
-  width: 100% !important;
+.issue-form .select2-container {
+  width: 250px !important;
 }

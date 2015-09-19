@@ -13,9 +13,7 @@ class CreateTagService < BaseService
       return error('Tag already exists')
     end
 
-    if message
-      message.gsub!(/^\s+|\s+$/, '')
-    end
+    message.strip! if message
 
     repository.add_tag(tag_name, ref, message)
     new_tag = repository.find_tag(tag_name)
@@ -40,7 +38,8 @@ class CreateTagService < BaseService
   end
 
   def create_push_data(project, user, tag)
+    commits = [project.commit(tag.target)].compact
     Gitlab::PushDataBuilder.
-      build(project, user, Gitlab::Git::BLANK_SHA, tag.target, "#{Gitlab::Git::TAG_REF_PREFIX}#{tag.name}", [])
+      build(project, user, Gitlab::Git::BLANK_SHA, tag.target, "#{Gitlab::Git::TAG_REF_PREFIX}#{tag.name}", commits, tag.message)
   end
 end

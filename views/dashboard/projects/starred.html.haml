@@ -1,4 +1,7 @@
+- page_title "Избранные проекты"
 - if @projects.any?
+  = render 'shared/show_aside'
+
   .dashboard.row
     %section.activities.col-md-8
       = render 'dashboard/activities'
@@ -6,18 +9,15 @@
       .panel.panel-default
         .panel-heading.clearfix
           .input-group
-            = search_field_tag :filter_projects, nil, placeholder: 'Фильтр по имени', class: 'projects-list-filter form-control'
+            = search_field_tag :filter_projects, nil, placeholder: 'Фильтр по наименованию', class: 'projects-list-filter form-control'
             - if current_user.can_create_project?
-              .input-group-addon.dash-new-project
-                = link_to new_project_path do
-                  %strong Новый проект
+              %span.input-group-btn
+                = link_to new_project_path, class: 'btn btn-success' do
+                  Новый проект
 
         = render 'shared/projects_list', projects: @projects,
           projects_limit: 20, stars: true, avatar: false
 
-    = link_to '#aside', class: 'show-aside' do
-      %i.fa.fa-angle-left
-
 - else
-  %h3 У вас нет избранных проектов
-  %p.slead Перейдите на страницу проекта и нажмите на значок звездочки — он появится на этой странице.
+  %h3 У вас еще нет избранных проектов
+  %p.slead Посетив страницу проекта, нажмите на значок звездочки и он появится на этой странице.

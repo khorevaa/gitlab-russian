@@ -1,7 +1,17 @@
 class Projects::ServicesController < Projects::ApplicationController
+  ALLOWED_PARAMS = [:title, :token, :type, :active, :api_key, :api_version, :subdomain,
+                    :room, :recipients, :project_url, :webhook,
+                    :user_key, :device, :priority, :sound, :bamboo_url, :username, :password,
+                    :build_key, :server, :teamcity_url, :build_type,
+                    :description, :issues_url, :new_issue_url, :restrict_to_branch, :channel,
+                    :colorize_messages, :channels,
+                    :push_events, :issues_events, :merge_requests_events, :tag_push_events,
+                    :note_events, :send_from_committer_email, :disable_diffs, :external_wiki_url,
+                    :notify, :color,
+                    :server_host, :server_port, :default_irc_uri]
   # Authorize
-  before_filter :authorize_admin_project!
-  before_filter :service, only: [:edit, :update, :test]
+  before_action :authorize_admin_project!
+  before_action :service, only: [:edit, :update, :test]
 
   respond_to :html
 
@@ -29,10 +39,13 @@ class Projects::ServicesController < Projects::ApplicationController
 
   def test
     data = Gitlab::PushDataBuilder.build_sample(project, current_user)
-    if @service.execute(data)
+    outcome = @service.test(data)
+    if outcome[:success]
       message = { notice: 'We sent a request to the provided URL' }
     else
-      message = { alert: 'We tried to send a request to the provided URL but an error occured' }
+      error_message = "We tried to send a request to the provided URL but an error occurred"
+      error_message << ": #{outcome[:result]}" if outcome[:result].present?
+      message = { alert: error_message }
     end
 
     redirect_to :back, message
@@ -45,15 +58,6 @@ class Projects::ServicesController < Projects::ApplicationController
   end
 
   def service_params
-    params.require(:service).permit(
-      :title, :token, :type, :active, :api_key, :subdomain,
-      :room, :recipients, :project_url, :webhook,
-      :user_key, :device, :priority, :sound, :bamboo_url, :username, :password,
-      :build_key, :server, :teamcity_url, :build_type,
-      :description, :issues_url, :new_issue_url, :restrict_to_branch, :channel,
-      :colorize_messages, :channels,
-      :push_events, :issues_events, :merge_requests_events, :tag_push_events,
-      :note_events, :send_from_committer_email, :disable_diffs
-    )
+    params.require(:service).permit(ALLOWED_PARAMS)
   end
 end

@@ -1,6 +1,3 @@
-require 'html/pipeline'
-require 'html/pipeline/gitlab'
-
 module EmailsHelper
 
   # Google Actions
@@ -33,35 +30,28 @@ module EmailsHelper
     end
   end
 
-  def add_email_highlight_css
-    Rugments::Themes::Github.render(scope: '.highlight')
-  end
-
   def color_email_diff(diffcontent)
-    formatter = Rugments::Formatters::HTML.new(cssclass: 'highlight')
-    lexer = Rugments::Lexers::Diff.new
+    formatter = Rouge::Formatters::HTML.new(css_class: 'highlight', inline_theme: 'github')
+    lexer = Rouge::Lexers::Diff
     raw formatter.format(lexer.lex(diffcontent))
   end
 
-  def replace_image_links_with_base64(text, project)
-    # Used pipelines in GitLab:
-    # GitlabEmailImageFilter - replaces images that have been uploaded as attachments with inline images in emails.
-    #
-    # see https://gitlab.com/gitlab-org/html-pipeline-gitlab for more filters
-    filters = [
-      HTML::Pipeline::Gitlab::GitlabEmailImageFilter
-    ]
+  def password_reset_token_valid_time
+    valid_hours = Devise.reset_password_within / 60 / 60
+    if valid_hours >= 24
+      unit = 'day'
+      valid_length = (valid_hours / 24).floor
+    else
+      unit = 'hour'
+      valid_length = valid_hours.floor
+    end
 
-    context = {
-      base_url: File.join(Gitlab.config.gitlab.url, project.path_with_namespace, 'uploads'),
-      upload_path: File.join(Rails.root, 'public', 'uploads', project.path_with_namespace),
-    }
+    pluralize(valid_length, unit)
+  end
 
-    pipeline = HTML::Pipeline::Gitlab.new(filters).pipeline
-
-    result = pipeline.call(text, context)
-    text = result[:output].to_html(save_with: 0)
-
-    text.html_safe
+  def reset_token_expire_message
+    link_tag = link_to('request a new one', new_user_password_url(user_email: @user.email))
+    msg = "This link is valid for #{password_reset_token_valid_time}.  "
+    msg << "After it expires, you can #{link_tag}."
   end
 end

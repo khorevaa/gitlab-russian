@@ -2,9 +2,9 @@
   %input#zen-toggle-comment.zen-toggle-comment{ tabindex: '-1', type: 'checkbox' }
   .zen-backdrop
     - classes << ' js-gfm-input markdown-area'
-    = f.text_area attr, class: classes, placeholder: 'Оставить комментарий'
+    = f.text_area attr, class: classes, placeholder: ''
     = link_to nil, class: 'zen-enter-link', tabindex: '-1' do
       %i.fa.fa-expand
-      Править в полноэкранном режиме
+      Edit in fullscreen
     = link_to nil, class: 'zen-leave-link' do
       %i.fa.fa-compress

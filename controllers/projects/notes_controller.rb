@@ -1,9 +1,9 @@
 class Projects::NotesController < Projects::ApplicationController
   # Authorize
-  before_filter :authorize_read_note!
-  before_filter :authorize_write_note!, only: [:create]
-  before_filter :authorize_admin_note!, only: [:update, :destroy]
-  before_filter :find_current_user_notes, except: [:destroy, :delete_attachment]
+  before_action :authorize_read_note!
+  before_action :authorize_create_note!, only: [:create]
+  before_action :authorize_admin_note!, only: [:update, :destroy]
+  before_action :find_current_user_notes, except: [:destroy, :delete_attachment]
 
   def index
     current_fetched_at = Time.now.to_i
@@ -30,13 +30,10 @@ class Projects::NotesController < Projects::ApplicationController
   end
 
   def update
-    if note.editable?
-      note.update_attributes(note_params)
-      note.reset_events_cache
-    end
+    @note = Notes::UpdateService.new(project, current_user, note_params).execute(note)
 
     respond_to do |format|
-      format.json { render_note_json(note) }
+      format.json { render_note_json(@note) }
       format.html { redirect_to :back }
     end
   end
@@ -77,11 +74,24 @@ class Projects::NotesController < Projects::ApplicationController
   end
 
   def note_to_discussion_html(note)
+    if params[:view] == 'parallel'
+      template = "projects/notes/_diff_notes_with_reply_parallel"
+      locals =
+        if params[:line_type] == 'old'
+          { notes_left: [note], notes_right: [] }
+        else
+          { notes_left: [], notes_right: [note] }
+       end
+    else
+      template = "projects/notes/_diff_notes_with_reply"
+      locals = { notes: [note] }
+    end
+
     render_to_string(
-      "projects/notes/_diff_notes_with_reply",
+      template,
       layout: false,
       formats: [:html],
-      locals: { notes: [note] }
+      locals: locals
     )
   end
 

@@ -1,0 +1,36 @@
+%ul.nav.nav-sidebar
+  = nav_link do
+    = link_to project_path(@project), title: 'Вернуться к проекту', data: {placement: 'right'}, class: 'back-link' do
+      = icon('caret-square-o-left fw')
+      %span
+        Вернуться к проекту
+
+  %li.separate-item
+
+  %ul.sidebar-subnav
+    = nav_link(path: 'projects#edit') do
+      = link_to edit_project_path(@project), title: 'Настройки проекта', data: {placement: 'right'} do
+        = icon('pencil-square-o fw')
+        %span
+          Настройки проекта
+    = nav_link(controller: :deploy_keys) do
+      = link_to namespace_project_deploy_keys_path(@project.namespace, @project), title: 'Ключи развертывания', data: {placement: 'right'} do
+        = icon('key fw')
+        %span
+          Ключи развертывания
+    = nav_link(controller: :hooks) do
+      = link_to namespace_project_hooks_path(@project.namespace, @project), title: 'Веб-хуки', data: {placement: 'right'} do
+        = icon('link fw')
+        %span
+          Веб-хуки
+    = nav_link(controller: :services) do
+      = link_to namespace_project_services_path(@project.namespace, @project), title: 'Службы', data: {placement: 'right'} do
+        = icon('cogs fw')
+        %span
+          Службы
+    = nav_link(controller: :protected_branches) do
+      = link_to namespace_project_protected_branches_path(@project.namespace, @project), title: 'Защищенные ветки', data: {placement: 'right'} do
+        = icon('lock fw')
+        %span
+          Защищенные ветки
+

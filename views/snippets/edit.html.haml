@@ -1,4 +1,5 @@
+- page_title "Правка", @snippet.title, "фрагмента"
 %h3.page-title
-  Правка сниппета
+  Правка фрагмента
 %hr
-= render "shared/snippets/form", url: snippet_path(@snippet)
+= render 'shared/snippets/form', url: snippet_path(@snippet), visibility_level: @snippet.visibility_level

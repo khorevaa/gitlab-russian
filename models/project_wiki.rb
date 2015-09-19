@@ -2,7 +2,7 @@ class ProjectWiki
   include Gitlab::ShellAdapter
 
   MARKUPS = {
-    'Markdown' => :markdown,
+    'Markdown' => :md,
     'RDoc'     => :rdoc,
     'AsciiDoc' => :asciidoc
   } unless defined?(MARKUPS)
@@ -104,7 +104,7 @@ class ProjectWiki
   def page_title_and_dir(title)
     title_array =  title.split("/")
     title = title_array.pop
-    [title.gsub(/\.[^.]*$/, ""), title_array.join("/")]
+    [title, title_array.join("/")]
   end
 
   def search_files(query)
@@ -112,7 +112,7 @@ class ProjectWiki
   end
 
   def repository
-    Repository.new(path_with_namespace, default_branch)
+    Repository.new(path_with_namespace, default_branch, @project)
   end
 
   def default_branch

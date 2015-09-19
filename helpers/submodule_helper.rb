@@ -2,8 +2,8 @@ module SubmoduleHelper
   include Gitlab::ShellAdapter
 
   # links to files listing for submodule if submodule is a project on this server
-  def submodule_links(submodule_item, ref = nil)
-    url = @repository.submodule_url_for(ref, submodule_item.path)
+  def submodule_links(submodule_item, ref = nil, repository = @repository)
+    url = repository.submodule_url_for(ref, submodule_item.path)
 
     return url, nil unless url =~ /([^\/:]+)\/([^\/]+\.git)\Z/
 
@@ -44,21 +44,31 @@ module SubmoduleHelper
 
   def relative_self_url?(url)
     # (./)?(../repo.git) || (./)?(../../project/repo.git) )
-    url =~ /^((\.\/)?(\.\.\/))(?!(\.\.)|(.*\/)).*\.git\Z/ || url =~ /^((\.\/)?(\.\.\/){2})(?!(\.\.))([^\/]*)\/(?!(\.\.)|(.*\/)).*\.git\Z/
+    url =~ /\A((\.\/)?(\.\.\/))(?!(\.\.)|(.*\/)).*\.git\z/ || url =~ /\A((\.\/)?(\.\.\/){2})(?!(\.\.))([^\/]*)\/(?!(\.\.)|(.*\/)).*\.git\z/
   end
 
   def standard_links(host, namespace, project, commit)
     base = [ 'https://', host, '/', namespace, '/', project ].join('')
-    return base, [ base, '/tree/', commit ].join('')
+    [base, [ base, '/tree/', commit ].join('')]
   end
 
   def relative_self_links(url, commit)
-    if url.scan(/(\.\.\/)/).size == 2
-      base = url[/([^\/]*\/[^\/]*)\.git/, 1]
-    else
-      base = [ @project.group.path, '/', url[/([^\/]*)\.git/, 1] ].join('')
+    # Map relative links to a namespace and project
+    # For example:
+    # ../bar.git -> same namespace, repo bar
+    # ../foo/bar.git -> namespace foo, repo bar
+    # ../../foo/bar/baz.git -> namespace bar, repo baz
+    components = url.split('/')
+    base = components.pop.gsub(/.git$/, '')
+    namespace = components.pop.gsub(/^\.\.$/, '')
+
+    if namespace.empty?
+      namespace = @project.namespace.path
     end
-    return namespace_project_path(base.namespace, base),
-      namespace_project_tree_path(base.namespace, base, commit)
+
+    [
+      namespace_project_path(namespace, base),
+      namespace_project_tree_path(namespace, base, commit)
+    ]
   end
 end

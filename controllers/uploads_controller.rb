@@ -1,6 +1,6 @@
 class UploadsController < ApplicationController
-  skip_before_filter :authenticate_user!
-  before_filter :find_model, :authorize_access!
+  skip_before_action :authenticate_user!
+  before_action :find_model, :authorize_access!
 
   def show
     uploader = @model.send(upload_mount)
@@ -28,7 +28,7 @@ class UploadsController < ApplicationController
   end
 
   def authorize_access!
-    authorized = 
+    authorized =
       case @model
       when Project
         can?(current_user, :read_project, @model)
@@ -52,13 +52,13 @@ class UploadsController < ApplicationController
 
   def upload_model
     upload_models = {
-      user: User,
-      project: Project,
-      note: Note,
-      group: Group
+      "user"    => User,
+      "project" => Project,
+      "note"    => Note,
+      "group"   => Group
     }
 
-    upload_models[params[:model].to_sym]
+    upload_models[params[:model]]
   end
 
   def upload_mount

@@ -1,10 +1,14 @@
 .panel.panel-default
   .panel-heading
-    Profile
+    Профиль
   %ul.well-list
     %li
-      %span.light Member since
+      %span.light Вместе с нами с
       %strong= user.created_at.stamp("Aug 21, 2011")
+    - unless user.public_email.blank?
+      %li
+        %span.light E-mail:
+        %strong= link_to user.public_email, "mailto:#{user.public_email}"
     - unless user.skype.blank?
       %li
         %span.light Skype:
@@ -19,9 +23,9 @@
         %strong= link_to user.twitter, "http://www.twitter.com/#{user.twitter}"
     - unless user.website_url.blank?
       %li
-        %span.light Website:
+        %span.light Веб сайт:
         %strong= link_to user.short_website_url, user.full_website_url
-    - unless user.bio.blank?
+    - unless user.location.blank?
       %li
-        %span.light Bio:
-        %span= user.bio
+        %span.light Местоположение:
+        %strong= user.location

@@ -15,12 +15,13 @@
 #  issues_events         :boolean          default(TRUE)
 #  merge_requests_events :boolean          default(TRUE)
 #  tag_push_events       :boolean          default(TRUE)
+#  note_events           :boolean          default(TRUE), not null
 #
 
 class HipchatService < Service
   MAX_COMMITS = 3
 
-  prop_accessor :token, :room, :server
+  prop_accessor :token, :room, :server, :notify, :color, :api_version
   validates :token, presence: true, if: :activated?
 
   def title
@@ -39,6 +40,10 @@ class HipchatService < Service
     [
       { type: 'text', name: 'token',     placeholder: 'Room token' },
       { type: 'text', name: 'room',      placeholder: 'Room name or ID' },
+      { type: 'checkbox', name: 'notify' },
+      { type: 'select', name: 'color', choices: ['yellow', 'red', 'green', 'purple', 'gray', 'random'] },
+      { type: 'text', name: 'api_version',
+        placeholder: 'Leave blank for default (v2)' },
       { type: 'text', name: 'server',
         placeholder: 'Leave blank for default. https://hipchat.example.com' }
     ]
@@ -50,16 +55,31 @@ class HipchatService < Service
 
   def execute(data)
     return unless supported_events.include?(data[:object_kind])
+    message = create_message(data)
+    return unless message.present?
+    gate[room].send('GitLab', message, message_options)
+  end
 
-    gate[room].send('GitLab', create_message(data))
+  def test(data)
+    begin
+      result = execute(data)
+    rescue StandardError => error
+      return { success: false, result: error }
+    end
+
+    { success: true, result: result }
   end
 
   private
 
   def gate
-    options = { api_version: 'v2' }
+    options = { api_version: api_version.present? ? api_version : 'v2' }
     options[:server_url] = server unless server.blank?
     @gate ||= HipChat::Client.new(token, options)
+  end
+
+  def message_options
+    { notify: notify.present? && notify == '1', color: color || 'yellow' }
   end
 
   def create_message(data)

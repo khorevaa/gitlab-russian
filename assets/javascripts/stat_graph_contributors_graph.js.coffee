@@ -1,3 +1,7 @@
+#= require d3
+#= require jquery
+#= require underscore
+
 class @ContributorsGraph
   MARGIN:
     top: 20
@@ -46,7 +50,7 @@ class @ContributorsGraph
 
 class @ContributorsMasterGraph extends ContributorsGraph
   constructor: (@data) ->
-    @width = $('.container').width() - 345
+    @width = $('.content').width() - 70
     @height = 200
     @x = null
     @y = null
@@ -119,7 +123,7 @@ class @ContributorsMasterGraph extends ContributorsGraph
 
 class @ContributorsAuthorGraph extends ContributorsGraph
   constructor: (@data) ->
-    @width = $('.container').width()/2 - 225
+    @width = $('.content').width()/2 - 100
     @height = 200
     @x = null
     @y = null

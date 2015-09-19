@@ -3,20 +3,20 @@
   .col-md-4
     .panel.panel-default
       .panel-heading
-        SSH Key
+        SSH ключ
       %ul.well-list
         %li
-          %span.light Title:
+          %span.light Наименование:
           %strong= @key.title
         %li
-          %span.light Created on:
+          %span.light Создан:
           %strong= @key.created_at.stamp("Aug 21, 2011")
 
   .col-md-8
     %p
-      %span.light Fingerprint:
-      %strong= @key.fingerprint
+      %span.light Отпечаток ключа:
+      %code.key-fingerprint= @key.fingerprint
     %pre.well-pre
       = @key.key
   .pull-right
-    = link_to 'Remove', path_to_key(@key, is_admin), data: {confirm: 'Are you sure?'}, method: :delete, class: "btn btn-remove delete-key"
+    = link_to 'Удалить', path_to_key(@key, is_admin), data: {confirm: 'Вы уверены?'}, method: :delete, class: "btn btn-remove delete-key"

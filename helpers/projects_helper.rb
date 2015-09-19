@@ -1,6 +1,10 @@
 module ProjectsHelper
-  def remove_from_project_team_message(project, user)
-    "You are going to remove #{user.name} from #{project.name} project team. Are you sure?"
+  def remove_from_project_team_message(project, member)
+    if member.user
+      "You are going to remove #{member.user.name} from #{project.name} project team. Are you sure?"
+    else
+      "You are going to revoke the invitation for #{member.invite_email} to join #{project.name} project team. Are you sure?"
+    end
   end
 
   def link_to_project(project)
@@ -17,7 +21,7 @@ module ProjectsHelper
   end
 
   def link_to_member(project, author, opts = {})
-    default_opts = { avatar: true, name: true, size: 16 }
+    default_opts = { avatar: true, name: true, size: 16, author_class: 'author' }
     opts = default_opts.merge(opts)
 
     return "(deleted)" unless author
@@ -28,7 +32,7 @@ module ProjectsHelper
     author_html << image_tag(avatar_icon(author.try(:email), opts[:size]), width: opts[:size], class: "avatar avatar-inline #{"s#{opts[:size]}" if opts[:size]}", alt:'') if opts[:avatar]
 
     # Build name span tag
-    author_html << content_tag(:span, sanitize(author.name), class: 'author') if opts[:name]
+    author_html << content_tag(:span, sanitize(author.name), class: opts[:author_class]) if opts[:name]
 
     author_html = author_html.html_safe
 
@@ -80,48 +84,21 @@ module ProjectsHelper
     @project.milestones.active.order("due_date, title ASC")
   end
 
-  def link_to_toggle_star(title, starred, signed_in)
-    cls = 'star-btn'
-    cls << ' disabled' unless signed_in
-
-    toggle_html = content_tag('span', class: 'toggle') do
-      toggle_text = if starred
-                      ' Unstar'
-                    else
-                      ' Star'
-                    end
-
-      icon('star') + toggle_text
-    end
-
-    count_html = content_tag('span', class: 'count') do
-      @project.star_count.to_s
-    end
-
-    link_opts = {
-      title: title,
-      class: cls,
-      method: :post,
-      remote: true,
-      data: { type: 'json' }
-    }
-
-
-    content_tag 'span', class: starred ? 'turn-on' : 'turn-off' do
-      link_to(
-        toggle_star_namespace_project_path(@project.namespace, @project),
-        link_opts
-      ) do
-        toggle_html + ' ' + count_html
-      end
+  def project_for_deploy_key(deploy_key)
+    if deploy_key.projects.include?(@project)
+      @project
+    else
+      deploy_key.projects.find { |project| can?(current_user, :read_project, project) }
     end
   end
 
-  def link_to_toggle_fork
-    out = icon('code-fork')
-    out << ' Fork'
-    out << content_tag(:span, class: 'count') do
-      @project.forks_count.to_s
+  def can_change_visibility_level?(project, current_user)
+    return false unless can?(current_user, :change_visibility_level, project)
+
+    if project.forked?
+      project.forked_from_project.visibility_level > Gitlab::VisibilityLevel::PRIVATE
+    else
+      true
     end
   end
 
@@ -134,7 +111,7 @@ module ProjectsHelper
       nav_tabs << [:files, :commits, :network, :graphs]
     end
 
-    if project.repo_exists? && project.merge_requests_enabled
+    if project.repo_exists? && can?(current_user, :read_merge_request, project)
       nav_tabs << :merge_requests
     end
 
@@ -142,12 +119,24 @@ module ProjectsHelper
       nav_tabs << :settings
     end
 
-    [:issues, :wiki, :snippets].each do |feature|
-      nav_tabs << feature if project.send :"#{feature}_enabled"
+    if can?(current_user, :read_issue, project)
+      nav_tabs << :issues
     end
 
-    if project.issues_enabled || project.merge_requests_enabled
-      nav_tabs << [:milestones, :labels]
+    if can?(current_user, :read_wiki, project)
+      nav_tabs << :wiki
+    end
+
+    if can?(current_user, :read_project_snippet, project)
+      nav_tabs << :snippets
+    end
+
+    if can?(current_user, :read_label, project)
+      nav_tabs << :labels
+    end
+
+    if can?(current_user, :read_milestone, project)
+      nav_tabs << :milestones
     end
 
     nav_tabs.flatten
@@ -178,46 +167,6 @@ module ProjectsHelper
     'unknown'
   end
 
-  def project_head_title
-    title = @project.name_with_namespace
-
-    title = if current_controller?(:tree)
-              "#{@project.path}\/#{@path} at #{@ref} - " + title
-            elsif current_controller?(:issues)
-              if current_action?(:show)
-                "Issue ##{@issue.iid} - #{@issue.title} - " + title
-              else
-                "Issues - " + title
-              end
-            elsif current_controller?(:blob)
-              if current_action?(:new) || current_action?(:create)
-                "New file at #{@ref}"
-              elsif current_action?(:show)
-                "#{@blob.path} at #{@ref}"
-              elsif @blob
-                "Edit file #{@blob.path} at #{@ref}"
-              end
-            elsif current_controller?(:commits)
-              "Commits at #{@ref} - " + title
-            elsif current_controller?(:merge_requests)
-              if current_action?(:show)
-                "Merge request ##{@merge_request.iid} - " + title
-              else
-                "Merge requests - " + title
-              end
-            elsif current_controller?(:wikis)
-              "Wiki - " + title
-            elsif current_controller?(:network)
-              "Network graph - " + title
-            elsif current_controller?(:graphs)
-              "Graphs - " + title
-            else
-              title
-            end
-
-    title
-  end
-
   def default_url_to_repo(project = nil)
     project = project || @project
     current_user ? project.url_to_repo : project.http_url_to_repo
@@ -229,21 +178,73 @@ module ProjectsHelper
 
   def project_last_activity(project)
     if project.last_activity_at
-      time_ago_with_tooltip(project.last_activity_at, 'bottom', 'last_activity_time_ago')
+      time_ago_with_tooltip(project.last_activity_at, placement: 'bottom', html_class: 'last_activity_time_ago')
     else
       "Never"
     end
   end
 
-  def contribution_guide_url(project)
-    if project && project.repository.contribution_guide
+  def add_contribution_guide_path(project)
+    if project && !project.repository.contribution_guide
+      namespace_project_new_blob_path(
+        project.namespace,
+        project,
+        project.default_branch,
+        file_name:      "CONTRIBUTING.md",
+        commit_message: "Add contribution guide"
+      )
+    end
+  end
+
+  def add_changelog_path(project)
+    if project && !project.repository.changelog
+      namespace_project_new_blob_path(
+        project.namespace,
+        project,
+        project.default_branch,
+        file_name:      "CHANGELOG",
+        commit_message: "Add changelog"
+      )
+    end
+  end
+
+  def add_license_path(project)
+    if project && !project.repository.license
+      namespace_project_new_blob_path(
+        project.namespace,
+        project,
+        project.default_branch,
+        file_name:      "LICENSE",
+        commit_message: "Add license"
+      )
+    end
+  end
+
+  def contribution_guide_path(project)
+    if project && contribution_guide = project.repository.contribution_guide
       namespace_project_blob_path(
         project.namespace,
         project,
         tree_join(project.default_branch,
-                  project.repository.contribution_guide.name)
+                  contribution_guide.name)
       )
     end
+  end
+
+  def readme_path(project)
+    filename_path(project, :readme)
+  end
+
+  def changelog_path(project)
+    filename_path(project, :changelog)
+  end
+
+  def license_path(project)
+    filename_path(project, :license)
+  end
+
+  def version_path(project)
+    filename_path(project, :version)
   end
 
   def hidden_pass_url(original_url)
@@ -270,13 +271,60 @@ module ProjectsHelper
     end
   end
 
-  def service_field_value(type, value)
-    return value unless type == 'password'
+  def user_max_access_in_project(user, project)
+    level = project.team.max_member_access(user)
 
-    if value.present?
-      "***********"
+    if level
+      Gitlab::Access.options_with_owner.key(level)
+    end
+  end
+
+  def leave_project_message(project)
+    "Are you sure you want to leave \"#{project.name}\" project?"
+  end
+
+  def new_readme_path
+    ref = @repository.root_ref if @repository
+    ref ||= 'master'
+
+    namespace_project_new_blob_path(@project.namespace, @project, tree_join(ref), file_name: 'README.md')
+  end
+
+  def last_push_event
+    if current_user
+      current_user.recent_push(@project.id)
+    end
+  end
+
+  def readme_cache_key
+    sha = @project.commit.try(:sha) || 'nil'
+    [@project.id, sha, "readme"].join('-')
+  end
+
+  def round_commit_count(project)
+    count = project.commit_count
+
+    if count > 10000
+      '10000+'
+    elsif count > 5000
+      '5000+'
+    elsif count > 1000
+      '1000+'
     else
-      nil
+      count
+    end
+  end
+
+  private
+
+  def filename_path(project, filename)
+    if project && blob = project.repository.send(filename)
+      namespace_project_blob_path(
+          project.namespace,
+          project,
+          tree_join(project.default_branch,
+                    blob.name)
+      )
     end
   end
 end

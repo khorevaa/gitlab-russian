@@ -1,11 +1,15 @@
+- page_title "Trending Projects"
+.explore-title
+  %h3
+    Explore GitLab
+  %p.lead
+    Discover projects and groups. Share your projects with others
+%hr
 .explore-trending-block
   %p.lead
     %i.fa.fa-comments-o
-    Самые обсуждаемые проекты за последний месяц
+    See most discussed projects for last month
   %hr
   .public-projects
     %ul.bordered-list
       = render @trending_projects
-
-  .center
-    = link_to 'Показать все проекты', explore_projects_path, class: 'btn btn-primary'

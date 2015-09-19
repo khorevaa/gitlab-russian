@@ -1,8 +1,12 @@
-%h4 Commits calendar
+%h4
+  Календарь проделанной работы
+  .pull-right
+    %small Вопросы, запросы слияния и пуши
 #cal-heatmap.calendar
   :javascript
-    new calendar(
+    new Calendar(
       #{@timestamps.to_json},
       #{@starting_year},
-      #{@starting_month}
+      #{@starting_month},
+      '#{user_calendar_activities_path}'
     );

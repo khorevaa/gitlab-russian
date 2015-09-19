@@ -25,21 +25,16 @@ module TreeHelper
   end
 
   def render_readme(readme)
-    if gitlab_markdown?(readme.name)
-      preserve(markdown(readme.data))
-    elsif markup?(readme.name)
-      render_markup(readme.name, readme.data)
-    else
-      simple_format(readme.data)
-    end
+    render_markup(readme.name, readme.data)
   end
 
-  # Return an image icon depending on the file type
+  # Return an image icon depending on the file type and mode
   #
   # type - String type of the tree item; either 'folder' or 'file'
-  def tree_icon(type)
-    icon_class = type == 'folder' ? 'folder' : 'file-o'
-    icon(icon_class)
+  # mode - File unix mode
+  # name - File name
+  def tree_icon(type, mode, name)
+    icon("#{file_type_icon_class(type, mode, name)} fw")
   end
 
   def tree_hex_class(content)
@@ -56,7 +51,7 @@ module TreeHelper
     ref ||= @ref
     return false unless project.repository.branch_names.include?(ref)
 
-    ::Gitlab::GitAccess.can_push_to_branch?(current_user, project, ref)
+    ::Gitlab::GitAccess.new(current_user, project).can_push_to_branch?(ref)
   end
 
   def tree_breadcrumbs(tree, max_links = 2)

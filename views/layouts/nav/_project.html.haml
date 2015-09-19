@@ -1,97 +1,112 @@
-%ul.project-navigation.nav.nav-sidebar
-  - if @project_settings_nav
+%ul.nav.nav-sidebar
+  - if @project.group
     = nav_link do
-      = link_to project_path(@project), title: 'Обратно в проект', class: "" do
-        %i.fa.fa-caret-square-o-left
+      = link_to group_path(@project.group), title: 'Вернуться к группе', data: {placement: 'right'}, class: 'back-link' do
+        = icon('caret-square-o-left fw')
         %span
-          Обратно в проект
-
-    %li.separate-item
-
-    = render 'projects/settings_nav'
-
+          Вернуться к группе
   - else
-    = nav_link(path: 'projects#show', html_options: {class: "home"}) do
-      = link_to project_path(@project), title: 'Проект', class: 'shortcuts-project' do
-        %i.fa.fa-dashboard
+    = nav_link do
+      = link_to root_path, title: 'Вернуться к панели управления', data: {placement: 'right'}, class: 'back-link' do
+        = icon('caret-square-o-left fw')
         %span
-          Проект
-    - if project_nav_tab? :files
-      = nav_link(controller: %w(tree blob blame edit_tree new_tree)) do
-        = link_to namespace_project_tree_path(@project.namespace, @project, @ref || @repository.root_ref), title: 'Файлы',  class: 'shortcuts-tree' do
-          %i.fa.fa-files-o
-          %span
-            Файлы
+          Панель управления
 
-    - if project_nav_tab? :commits
-      = nav_link(controller: %w(commit commits compare repositories tags branches)) do
-        = link_to namespace_project_commits_path(@project.namespace, @project, @ref || @repository.root_ref), title: 'Коммиты', class: 'shortcuts-commits' do
-          %i.fa.fa-history
-          %span
-            Коммиты
+  %li.separate-item
 
-    - if project_nav_tab? :network
-      = nav_link(controller: %w(network)) do
-        = link_to namespace_project_network_path(@project.namespace, @project, @ref || @repository.root_ref), title: 'Ветви', class: 'shortcuts-network' do
-          %i.fa.fa-code-fork
-          %span
-            Ветви
+  = nav_link(path: 'projects#show', html_options: {class: 'home'}) do
+    = link_to project_path(@project), title: 'Проект', class: 'shortcuts-project', data: {placement: 'right'} do
+      = icon('home fw')
+      %span
+        Проект
+  = nav_link(path: 'projects#activity') do
+    = link_to activity_project_path(@project), title: 'Деятельность проекта', class: 'shortcuts-project-activity', data: {placement: 'right'} do
+      = icon('dashboard fw')
+      %span
+        Деятельность
+  - if project_nav_tab? :files
+    = nav_link(controller: %w(tree blob blame edit_tree new_tree)) do
+      = link_to namespace_project_tree_path(@project.namespace, @project, @ref || @repository.root_ref), title: 'Файлы',  class: 'shortcuts-tree', data: {placement: 'right'} do
+        = icon('files-o fw')
+        %span
+          Файлы
 
-    - if project_nav_tab? :graphs
-      = nav_link(controller: %w(graphs)) do
-        = link_to namespace_project_graph_path(@project.namespace, @project, @ref || @repository.root_ref), title: 'Графики',  class: 'shortcuts-graphs' do
-          %i.fa.fa-area-chart
-          %span
-            Графики
+  - if project_nav_tab? :commits
+    = nav_link(controller: %w(commit commits compare repositories tags branches)) do
+      = link_to namespace_project_commits_path(@project.namespace, @project, @ref || @repository.root_ref), title: 'Коммиты', class: 'shortcuts-commits', data: {placement: 'right'} do
+        = icon('history fw')
+        %span
+          Коммиты
 
-    - if project_nav_tab? :milestones
-      = nav_link(controller: :milestones) do
-        = link_to namespace_project_milestones_path(@project.namespace, @project), title: 'Итерации' do
-          %i.fa.fa-clock-o
-          %span
-            Итерации
+  - if project_nav_tab? :network
+    = nav_link(controller: %w(network)) do
+      = link_to namespace_project_network_path(@project.namespace, @project, @ref || @repository.root_ref), title: 'Ветви', class: 'shortcuts-network', data: {placement: 'right'} do
+        = icon('code-fork fw')
+        %span
+          Ветви
 
-    - if project_nav_tab? :issues
-      = nav_link(controller: :issues) do
-        = link_to url_for_project_issues, title: 'Вопросы', class: 'shortcuts-issues' do
-          %i.fa.fa-exclamation-circle
-          %span
-            Вопросы
-            - if @project.default_issues_tracker?
-              %span.count.issue_counter= @project.issues.opened.count
+  - if project_nav_tab? :graphs
+    = nav_link(controller: %w(graphs)) do
+      = link_to namespace_project_graph_path(@project.namespace, @project, @ref || @repository.root_ref), title: 'Графики',  class: 'shortcuts-graphs', data: {placement: 'right'} do
+        = icon('area-chart fw')
+        %span
+          Графики
 
-    - if project_nav_tab? :merge_requests
-      = nav_link(controller: :merge_requests) do
-        = link_to namespace_project_merge_requests_path(@project.namespace, @project), title: 'Объединение запросов', class: 'shortcuts-merge_requests'  do
-          %i.fa.fa-tasks
-          %span
-            Запросы
-            %span.count.merge_counter= @project.merge_requests.opened.count
+  - if project_nav_tab? :milestones
+    = nav_link(controller: :milestones) do
+      = link_to namespace_project_milestones_path(@project.namespace, @project), title: 'Итерации', data: {placement: 'right'} do
+        = icon('clock-o fw')
+        %span
+          Итерации
 
-    - if project_nav_tab? :labels
-      = nav_link(controller: :labels) do
-        = link_to namespace_project_labels_path(@project.namespace, @project), title: 'Метки' do
-          %i.fa.fa-tags
-          %span
-            Метки
+  - if project_nav_tab? :issues
+    = nav_link(controller: :issues) do
+      = link_to url_for_project_issues(@project, only_path: true), title: 'Вопросы', class: 'shortcuts-issues', data: {placement: 'right'} do
+        = icon('exclamation-circle fw')
+        %span
+          Вопросы
+          - if @project.default_issues_tracker?
+            %span.count.issue_counter= @project.issues.opened.count
 
-    - if project_nav_tab? :wiki
-      = nav_link(controller: :wikis) do
-        = link_to namespace_project_wiki_path(@project.namespace, @project, :home), title: 'Вики', class: 'shortcuts-wiki' do
-          %i.fa.fa-book
-          %span
-            Вики
+  - if project_nav_tab? :merge_requests
+    = nav_link(controller: :merge_requests) do
+      = link_to namespace_project_merge_requests_path(@project.namespace, @project), title: 'Запросы слияния', class: 'shortcuts-merge_requests', data: {placement: 'right'} do
+        = icon('tasks fw')
+        %span
+          Запросы слияния
+          %span.count.merge_counter= @project.merge_requests.opened.count
 
-    - if project_nav_tab? :snippets
-      = nav_link(controller: :snippets) do
-        = link_to namespace_project_snippets_path(@project.namespace, @project), title: 'Фрагменты', class: 'shortcuts-snippets' do
-          %i.fa.fa-file-text-o
-          %span
-            Фрагменты
+  - if project_nav_tab? :settings
+    = nav_link(controller: [:project_members, :teams]) do
+      = link_to namespace_project_project_members_path(@project.namespace, @project), title: 'Члены проекта', class: 'team-tab tab', data: {placement: 'right'} do
+        = icon('users fw')
+        %span
+          Члены проекта
 
-    - if project_nav_tab? :settings
-      = nav_link(html_options: {class: "#{project_tab_class} separate-item"}) do
-        = link_to edit_project_path(@project), title: 'Настройки', class: "stat-tab tab no-highlight" do
-          %i.fa.fa-cogs
-          %span
-            Настройки
+  - if project_nav_tab? :labels
+    = nav_link(controller: :labels) do
+      = link_to namespace_project_labels_path(@project.namespace, @project), title: 'Метки', data: {placement: 'right'} do
+        = icon('tags fw')
+        %span
+          Метки
+
+  - if project_nav_tab? :wiki
+    = nav_link(controller: :wikis) do
+      = link_to get_project_wiki_path(@project), title: 'Вики', class: 'shortcuts-wiki', data: {placement: 'right'} do
+        = icon('book fw')
+        %span
+          Вики
+
+  - if project_nav_tab? :snippets
+    = nav_link(controller: :snippets) do
+      = link_to namespace_project_snippets_path(@project.namespace, @project), title: 'Фрагменты', class: 'shortcuts-snippets', data: {placement: 'right'} do
+        = icon('file-text-o fw')
+        %span
+          Фрагменты
+
+  - if project_nav_tab? :settings
+    = nav_link(html_options: {class: "#{project_tab_class} separate-item"}) do
+      = link_to edit_project_path(@project), title: 'Настройки', data: {placement: 'right'} do
+        = icon('cogs fw')
+        %span
+          Настройки

@@ -16,7 +16,7 @@
   .snippet-info
     = "##{snippet.id}"
     %span
-      от
+      владелец
       = link_to user_snippets_path(snippet.author) do
         = image_tag avatar_icon(snippet.author_email), class: "avatar avatar-inline s16", alt: ''
         = snippet.author_name

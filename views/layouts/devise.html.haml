@@ -1,9 +1,9 @@
 !!! 5
-%html{ lang: "en"}
+%html{ lang: "ru"}
   = render "layouts/head"
-  %body.ui_mars.login-page.application
+  %body.ui_charcoal.login-page.application
+    = render "layouts/header/empty"
     = render "layouts/broadcast"
-    = render "layouts/public_head_panel", title: ''
     .container.navless-container
       .content
         = render "layouts/flash"
@@ -20,9 +20,9 @@
               %h3 Открытое программное обеспечение для совместной работы над кодом
 
               %p
-                Управление git репозиторием с настраиваемым контролем доступа, которые содержат ваш код в безопасности.
-                Выполните анализ кода и расширяйте сотрудничество с запросами слияния.
-                Каждый проект может также иметь баг-трекер и Вики.
+                Управление git репозиториями с настраиваемым контролем доступа, содержащее ваш код в безопасности.
+                Позволяет выполять анализ кода и расширять функционал с помошью сотрудничество, использя запросы слияния.
+                Каждый проект может иметь баг-трекер и Вики.
 
             - if extra_sign_in_text.present?
               = markdown(extra_sign_in_text)
@@ -30,6 +30,6 @@
     %hr
     .container
       .footer-links
-        = link_to "Знакомство", explore_root_path
+        = link_to "Обзор", explore_root_path
         = link_to "Документация", "http://doc.gitlab.com/"
         = link_to "О GitLab", "https://about.gitlab.com/"

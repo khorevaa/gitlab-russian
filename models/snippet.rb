@@ -16,13 +16,16 @@
 #
 
 class Snippet < ActiveRecord::Base
-  include Sortable
-  include Linguist::BlobHelper
   include Gitlab::VisibilityLevel
+  include Linguist::BlobHelper
+  include Participable
+  include Referable
+  include Sortable
 
   default_value_for :visibility_level, Snippet::PRIVATE
 
-  belongs_to :author, class_name: "User"
+  belongs_to :author, class_name: 'User'
+  belongs_to :project
 
   has_many :notes, as: :noteable, dependent: :destroy
 
@@ -31,10 +34,9 @@ class Snippet < ActiveRecord::Base
   validates :author, presence: true
   validates :title, presence: true, length: { within: 0..255 }
   validates :file_name,
-    presence: true,
     length: { within: 0..255 },
-    format: { with: Gitlab::Regex.path_regex,
-              message: Gitlab::Regex.path_regex_message }
+    format: { with: Gitlab::Regex.file_name_regex,
+              message: Gitlab::Regex.file_name_regex_message }
   validates :content, presence: true
   validates :visibility_level, inclusion: { in: Gitlab::VisibilityLevel.values }
 
@@ -46,6 +48,32 @@ class Snippet < ActiveRecord::Base
   scope :fresh,   -> { order("created_at DESC") }
   scope :expired, -> { where(["expires_at IS NOT NULL AND expires_at < ?", Time.current]) }
   scope :non_expired, -> { where(["expires_at IS NULL OR expires_at > ?", Time.current]) }
+
+  participant :author, :notes
+
+  def self.reference_prefix
+    '$'
+  end
+
+  # Pattern used to extract `$123` snippet references from text
+  #
+  # This pattern supports cross-project references.
+  def self.reference_pattern
+    %r{
+      (#{Project.reference_pattern})?
+      #{Regexp.escape(reference_prefix)}(?<snippet>\d+)
+    }x
+  end
+
+  def to_reference(from_project = nil)
+    reference = "#{self.class.reference_prefix}#{id}"
+
+    if cross_project_reference?(from_project)
+      reference = project.to_reference + reference
+    end
+
+    reference
+  end
 
   def self.content_types
     [

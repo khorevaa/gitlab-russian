@@ -1,7 +1,7 @@
-= form_for [@project.namespace.becomes(Namespace), @project, @label], html: { class: 'form-horizontal label-form' } do |f|
+= form_for [@project.namespace.becomes(Namespace), @project, @label], html: { class: 'form-horizontal label-form js-requires-input' } do |f|
   -if @label.errors.any?
     .row
-      .col-sm-10.col-sm-offset-2
+      .col-sm-offset-2.col-sm-10
         .alert.alert-danger
           - @label.errors.full_messages.each do |msg|
             %span= msg
@@ -12,15 +12,15 @@
     .col-sm-10
       = f.text_field :title, class: "form-control", required: true
   .form-group
-    = f.label :color, "Цвет фона", class: 'control-label'
+    = f.label :color, "Background Color", class: 'control-label'
     .col-sm-10
       .input-group
         .input-group-addon.label-color-preview &nbsp;
-        = f.color_field :color, placeholder: "#AA33EE", class: "form-control"
+        = f.color_field :color, class: "form-control"
       .help-block
-        6 знаков шестнадцатеричного значения, начинающиеся с знака #.
+        Choose any color.
         %br
-        Или вы можете выбрать один из предложенных цветов ниже
+        Or you can choose one of suggested colors below
 
       .suggest-colors
         - suggested_colors.each do |color|
@@ -28,6 +28,6 @@
             &nbsp;
 
   .form-actions
-    = f.submit 'Сохранить', class: 'btn btn-save js-save-button'
-    = link_to "Отмена", namespace_project_labels_path(@project.namespace, @project), class: 'btn btn-cancel'
+    = f.submit 'Save', class: 'btn btn-save js-save-button'
+    = link_to "Cancel", namespace_project_labels_path(@project.namespace, @project), class: 'btn btn-cancel'
 

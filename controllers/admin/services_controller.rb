@@ -1,5 +1,5 @@
 class Admin::ServicesController < Admin::ApplicationController
-  before_filter :service, only: [:edit, :update]
+  before_action :service, only: [:edit, :update]
 
   def index
     @services = services_templates
@@ -40,15 +40,6 @@ class Admin::ServicesController < Admin::ApplicationController
 
   def application_services_params
     params.permit(:id,
-      service: [
-        :title, :token, :type, :active, :api_key, :subdomain,
-        :room, :recipients, :project_url, :webhook,
-        :user_key, :device, :priority, :sound, :bamboo_url, :username, :password,
-        :build_key, :server, :teamcity_url, :build_type,
-        :description, :issues_url, :new_issue_url, :restrict_to_branch,
-        :send_from_committer_email, :disable_diffs,
-        :push_events, :tag_push_events, :note_events, :issues_events,
-        :merge_requests_events
-    ])
+      service: Projects::ServicesController::ALLOWED_PARAMS)
   end
 end
