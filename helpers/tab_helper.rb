@@ -67,6 +67,14 @@ module TabHelper
       path.any? do |single_path|
         current_path?(single_path)
       end
+    elsif page = options.delete(:page)
+      unless page.respond_to?(:each)
+        page = [page]
+      end
+
+      page.any? do |single_page|
+        current_page?(single_page)
+      end
     else
       c = options.delete(:controller)
       a = options.delete(:action)
@@ -100,24 +108,6 @@ module TabHelper
       current_page?(namespace_project_repository_path(@project.namespace,
                                                       @project))
       'active'
-    end
-  end
-
-  # Use nav_tab for save controller/action  but different params
-  def nav_tab(key, value, &block)
-    o = {}
-    o[:class] = ""
-
-    if value.nil?
-      o[:class] << " active" if params[key].blank?
-    else
-      o[:class] << " active" if params[key] == value
-    end
-
-    if block_given?
-      content_tag(:li, capture(&block), o)
-    else
-      content_tag(:li, nil, o)
     end
   end
 end

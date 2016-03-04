@@ -16,6 +16,7 @@
 #  merge_requests_events :boolean          default(TRUE)
 #  tag_push_events       :boolean          default(TRUE)
 #  note_events           :boolean          default(TRUE), not null
+#  build_events          :boolean          default(FALSE), not null
 #
 
 # To add new service you should build a class inherited from Service
@@ -30,21 +31,30 @@ class Service < ActiveRecord::Base
   default_value_for :merge_requests_events, true
   default_value_for :tag_push_events, true
   default_value_for :note_events, true
+  default_value_for :build_events, true
 
   after_initialize :initialize_properties
+
+  after_commit :reset_updated_properties
 
   belongs_to :project
   has_one :service_hook
 
   validates :project_id, presence: true, unless: Proc.new { |service| service.template? }
 
-  scope :visible, -> { where.not(type: 'GitlabIssueTrackerService') }
+  scope :visible, -> { where.not(type: ['GitlabIssueTrackerService', 'GitlabCiService']) }
+  scope :issue_trackers, -> { where(category: 'issue_tracker') }
+  scope :active, -> { where(active: true) }
+  scope :without_defaults, -> { where(default: false) }
 
   scope :push_hooks, -> { where(push_events: true, active: true) }
   scope :tag_push_hooks, -> { where(tag_push_events: true, active: true) }
   scope :issue_hooks, -> { where(issues_events: true, active: true) }
   scope :merge_request_hooks, -> { where(merge_requests_events: true, active: true) }
   scope :note_hooks, -> { where(note_events: true, active: true) }
+  scope :build_hooks, -> { where(build_events: true, active: true) }
+
+  default_value_for :category, 'common'
 
   def activated?
     active
@@ -55,7 +65,7 @@ class Service < ActiveRecord::Base
   end
 
   def category
-    :common
+    read_attribute(:category).to_sym
   end
 
   def initialize_properties
@@ -103,6 +113,7 @@ class Service < ActiveRecord::Base
 
   # Provide convenient accessor methods
   # for each serialized property.
+  # Also keep track of updated properties in a similar way as ActiveModel::Dirty
   def self.prop_accessor(*args)
     args.each do |arg|
       class_eval %{
@@ -111,10 +122,52 @@ class Service < ActiveRecord::Base
         end
 
         def #{arg}=(value)
+          updated_properties['#{arg}'] = #{arg} unless #{arg}_changed?
           self.properties['#{arg}'] = value
+        end
+
+        def #{arg}_changed?
+          #{arg}_touched? && #{arg} != #{arg}_was
+        end
+
+        def #{arg}_touched?
+          updated_properties.include?('#{arg}')
+        end
+
+        def #{arg}_was
+          updated_properties['#{arg}']
         end
       }
     end
+  end
+
+  # Provide convenient boolean accessor methods
+  # for each serialized property.
+  # Also keep track of updated properties in a similar way as ActiveModel::Dirty
+  def self.boolean_accessor(*args)
+    self.prop_accessor(*args)
+
+    args.each do |arg|
+      class_eval %{
+        def #{arg}?
+          ActiveRecord::ConnectionAdapters::Column::TRUE_VALUES.include?(#{arg})
+        end
+      }
+    end
+  end
+
+  # Returns a hash of the properties that have been assigned a new value since last save,
+  # indicating their original values (attr => original value).
+  # ActiveRecord does not provide a mechanism to track changes in serialized keys,
+  # so we need a specific implementation for service properties.
+  # This allows to track changes to properties set with the accessor methods,
+  # but not direct manipulation of properties hash.
+  def updated_properties
+    @updated_properties ||= ActiveSupport::HashWithIndifferentAccess.new
+  end
+
+  def reset_updated_properties
+    @updated_properties = nil
   end
 
   def async_execute(data)
@@ -133,13 +186,14 @@ class Service < ActiveRecord::Base
       assembla
       bamboo
       buildkite
+      builds_email
       campfire
       custom_issue_tracker
+      drone_ci
       emails_on_push
       external_wiki
       flowdock
       gemnasium
-      gitlab_ci
       hipchat
       irker
       jira

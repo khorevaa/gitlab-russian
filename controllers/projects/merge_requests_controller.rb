@@ -1,14 +1,14 @@
-require 'gitlab/satellite/satellite'
-
 class Projects::MergeRequestsController < Projects::ApplicationController
   before_action :module_enabled
   before_action :merge_request, only: [
-    :edit, :update, :show, :diffs, :commits, :automerge, :automerge_check,
-    :ci_status, :toggle_subscription
+    :edit, :update, :show, :diffs, :commits, :builds, :merge, :merge_check,
+    :ci_status, :toggle_subscription, :cancel_merge_when_build_succeeds
   ]
-  before_action :closes_issues, only: [:edit, :update, :show, :diffs, :commits]
-  before_action :validates_merge_request, only: [:show, :diffs, :commits]
-  before_action :define_show_vars, only: [:show, :diffs, :commits]
+  before_action :closes_issues, only: [:edit, :update, :show, :diffs, :commits, :builds]
+  before_action :validates_merge_request, only: [:show, :diffs, :commits, :builds]
+  before_action :define_show_vars, only: [:show, :diffs, :commits, :builds]
+  before_action :define_widget_vars, only: [:merge, :cancel_merge_when_build_succeeds, :merge_check]
+  before_action :ensure_ref_fetched, only: [:show, :diffs, :commits, :builds]
 
   # Allow read any merge_request
   before_action :authorize_read_merge_request!
@@ -32,6 +32,9 @@ class Projects::MergeRequestsController < Projects::ApplicationController
     end
 
     @merge_requests = @merge_requests.page(params[:page]).per(PER_PAGE)
+    @merge_requests = @merge_requests.preload(:target_project)
+
+    @label = @project.labels.find_by(title: params[:label_name])
 
     respond_to do |format|
       format.html
@@ -56,7 +59,15 @@ class Projects::MergeRequestsController < Projects::ApplicationController
   end
 
   def diffs
+    apply_diff_view_cookie!
+
     @commit = @merge_request.last_commit
+    @base_commit = @merge_request.diff_base_commit
+
+    # MRs created before 8.4 don't have a diff_base_commit,
+    # but we need it for the "View file @ ..." link by deleted files
+    @base_commit ||= @merge_request.first_commit.parent || @merge_request.first_commit
+
     @comments_allowed = @reply_allowed = true
     @comments_target = {
       noteable_type: 'MergeRequest',
@@ -77,9 +88,17 @@ class Projects::MergeRequestsController < Projects::ApplicationController
     end
   end
 
+  def builds
+    respond_to do |format|
+      format.html { render 'show' }
+      format.json { render json: { html: view_to_html_string('projects/merge_requests/show/_builds') } }
+    end
+  end
+
   def new
     params[:merge_request] ||= ActionController::Parameters.new(source_project: @project)
     @merge_request = MergeRequests::BuildService.new(project, current_user, merge_request_params).execute
+    @noteable = @merge_request
 
     @target_branches = if @merge_request.target_project
                          @merge_request.target_project.repository.branch_names
@@ -89,17 +108,16 @@ class Projects::MergeRequestsController < Projects::ApplicationController
 
     @target_project = merge_request.target_project
     @source_project = merge_request.source_project
-    @commits = @merge_request.compare_commits
-    @commit = @merge_request.compare_commits.last
+    @commits = @merge_request.compare_commits.reverse
+    @commit = @merge_request.last_commit
+    @base_commit = @merge_request.diff_base_commit
     @diffs = @merge_request.compare_diffs
+
+    @ci_commit = @merge_request.ci_commit
+    @statuses = @ci_commit.statuses if @ci_commit
+
     @note_counts = Note.where(commit_id: @commits.map(&:id)).
       group(:commit_id).count
-  end
-
-  def edit
-    @source_project = @merge_request.source_project
-    @target_project = @merge_request.target_project
-    @target_branches = @merge_request.target_project.repository.branch_names
   end
 
   def create
@@ -113,6 +131,12 @@ class Projects::MergeRequestsController < Projects::ApplicationController
       @target_project = @merge_request.target_project
       render action: "new"
     end
+  end
+
+  def edit
+    @source_project = @merge_request.source_project
+    @target_project = @merge_request.target_project
+    @target_branches = @merge_request.target_project.repository.branch_names
   end
 
   def update
@@ -137,24 +161,37 @@ class Projects::MergeRequestsController < Projects::ApplicationController
     end
   end
 
-  def automerge_check
-    if @merge_request.unchecked?
-      @merge_request.check_if_can_be_merged
-    end
-
-    closes_issues
+  def merge_check
+    @merge_request.check_if_can_be_merged
 
     render partial: "projects/merge_requests/widget/show.html.haml", layout: false
   end
 
-  def automerge
+  def cancel_merge_when_build_succeeds
+    return access_denied! unless @merge_request.can_cancel_merge_when_build_succeeds?(current_user)
+
+    MergeRequests::MergeWhenBuildSucceedsService.new(@project, current_user).cancel(@merge_request)
+  end
+
+  def merge
     return access_denied! unless @merge_request.can_be_merged_by?(current_user)
 
-    if @merge_request.automergeable?
-      AutoMergeWorker.perform_async(@merge_request.id, current_user.id, params)
-      @status = true
+    unless @merge_request.mergeable?
+      @status = :failed
+      return
+    end
+
+    TodoService.new.merge_merge_request(merge_request, current_user)
+
+    @merge_request.update(merge_error: nil)
+
+    if params[:merge_when_build_succeeds].present? && @merge_request.ci_commit && @merge_request.ci_commit.active?
+      MergeRequests::MergeWhenBuildSucceedsService.new(@project, current_user, merge_params)
+                                                      .execute(@merge_request)
+      @status = :merge_when_build_succeeds
     else
-      @status = false
+      MergeWorker.perform_async(@merge_request.id, current_user.id, params)
+      @status = :success
     end
   end
 
@@ -246,11 +283,9 @@ class Projects::MergeRequestsController < Projects::ApplicationController
   end
 
   def define_show_vars
-    @participants = @merge_request.participants(current_user, @project)
-
     # Build a note object for comment form
     @note = @project.notes.new(noteable: @merge_request)
-    @notes = @merge_request.mr_and_commit_notes.inc_author.fresh
+    @notes = @merge_request.mr_and_commit_notes.nonawards.inc_author.fresh
     @discussions = Note.discussions_from_notes(@notes)
     @noteable = @merge_request
 
@@ -259,12 +294,19 @@ class Projects::MergeRequestsController < Projects::ApplicationController
     @commits = @merge_request.commits
 
     @merge_request_diff = @merge_request.merge_request_diff
-    @source_branch = @merge_request.source_project.repository.find_branch(@merge_request.source_branch).try(:name)
+
+    @ci_commit = @merge_request.ci_commit
+    @statuses = @ci_commit.statuses if @ci_commit
 
     if @merge_request.locked_long_ago?
       @merge_request.unlock_mr
       @merge_request.close
     end
+  end
+
+  def define_widget_vars
+    @ci_commit = @merge_request.ci_commit
+    closes_issues
   end
 
   def invalid_mr
@@ -278,5 +320,15 @@ class Projects::MergeRequestsController < Projects::ApplicationController
       :target_project_id, :target_branch, :milestone_id,
       :state_event, :description, :task_num, label_ids: []
     )
+  end
+
+  def merge_params
+    params.permit(:should_remove_source_branch, :commit_message)
+  end
+
+  # Make sure merge requests created before 8.0
+  # have head file in refs/merge-requests/
+  def ensure_ref_fetched
+    @merge_request.ensure_ref_fetched
   end
 end

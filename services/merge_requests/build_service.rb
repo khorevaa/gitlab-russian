@@ -12,12 +12,16 @@ module MergeRequests
       merge_request.target_project ||= (project.forked_from_project || project)
       merge_request.target_branch ||= merge_request.target_project.default_branch
 
-      unless merge_request.target_branch && merge_request.source_branch
-        return build_failed(merge_request, nil)
+      if merge_request.target_branch.blank? || merge_request.source_branch.blank?
+        message =
+          if params[:source_branch] || params[:target_branch]
+            "You must select source and target branch"
+          end
+
+        return build_failed(merge_request, message)
       end
 
       compare_result = CompareService.new.execute(
-        current_user,
         merge_request.source_project,
         merge_request.source_branch,
         merge_request.target_project,
@@ -40,7 +44,6 @@ module MergeRequests
           merge_request.compare_diffs = diffs
 
         elsif diffs == false
-          # satellite timeout return false
           merge_request.can_be_created = false
           merge_request.compare_failed = true
         end
@@ -53,15 +56,12 @@ module MergeRequests
       if commits && commits.count == 1
         commit = commits.first
         merge_request.title       = commit.title
-        merge_request.description = commit.description.try(:strip)
+        merge_request.description ||= commit.description.try(:strip)
       else
         merge_request.title = merge_request.source_branch.titleize.humanize
       end
 
       merge_request
-
-    rescue Gitlab::Satellite::BranchesWithoutParent
-      return build_failed(merge_request, "Selected branches have no common commit so they cannot be merged.")
     end
 
     def build_failed(merge_request, message)

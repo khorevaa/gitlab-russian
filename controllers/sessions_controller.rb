@@ -1,13 +1,19 @@
 class SessionsController < Devise::SessionsController
   include AuthenticatesWithTwoFactor
+  include Recaptcha::ClientHelper
+
+  skip_before_action :check_2fa_requirement, only: [:destroy]
 
   prepend_before_action :authenticate_with_two_factor, only: [:create]
   prepend_before_action :store_redirect_path, only: [:new]
   before_action :auto_sign_in_with_provider, only: [:new]
+  before_action :load_recaptcha
 
   def new
     if Gitlab.config.ldap.enabled
       @ldap_servers = Gitlab::LDAP::Config.servers
+    else
+      @ldap_servers = []
     end
 
     super
@@ -38,7 +44,7 @@ class SessionsController < Devise::SessionsController
       User.find(session[:otp_user_id])
     end
   end
-  
+
   def store_redirect_path
     redirect_path =
       if request.referer.present? && (params['redirect_to_referer'] == 'yes')
@@ -85,24 +91,28 @@ class SessionsController < Devise::SessionsController
     provider = Gitlab.config.omniauth.auto_sign_in_with_provider
     return unless provider.present?
 
-    # Auto sign in with an Omniauth provider only if the standard "you need to sign-in" alert is 
-    # registered or no alert at all. In case of another alert (such as a blocked user), it is safer  
+    # Auto sign in with an Omniauth provider only if the standard "you need to sign-in" alert is
+    # registered or no alert at all. In case of another alert (such as a blocked user), it is safer
     # to do nothing to prevent redirection loops with certain Omniauth providers.
     return unless flash[:alert].blank? || flash[:alert] == I18n.t('devise.failure.unauthenticated')
-    
+
     # Prevent alert from popping up on the first page shown after authentication.
-    flash[:alert] = nil 
-    
+    flash[:alert] = nil
+
     redirect_to user_omniauth_authorize_path(provider.to_sym)
   end
 
   def valid_otp_attempt?(user)
-    user.valid_otp?(user_params[:otp_attempt]) ||
+    user.validate_and_consume_otp!(user_params[:otp_attempt]) ||
     user.invalidate_otp_backup_code!(user_params[:otp_attempt])
   end
 
   def log_audit_event(user, options = {})
     AuditEventService.new(user, user, options).
       for_authentication.security_event
+  end
+
+  def load_recaptcha
+    Gitlab::Recaptcha.load_configurations!
   end
 end

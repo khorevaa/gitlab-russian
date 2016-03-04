@@ -20,8 +20,14 @@ module ProjectsHelper
     end
   end
 
+  def link_to_member_avatar(author, opts = {})
+    default_opts = { avatar: true, name: true, size: 16, author_class: 'author', title: ":name" }
+    opts = default_opts.merge(opts)
+    image_tag(avatar_icon(author, opts[:size]), width: opts[:size], class: "avatar avatar-inline #{"s#{opts[:size]}" if opts[:size]}", alt:'') if opts[:avatar]
+  end
+
   def link_to_member(project, author, opts = {})
-    default_opts = { avatar: true, name: true, size: 16, author_class: 'author' }
+    default_opts = { avatar: true, name: true, size: 16, author_class: 'author', title: ":name" }
     opts = default_opts.merge(opts)
 
     return "(deleted)" unless author
@@ -29,7 +35,7 @@ module ProjectsHelper
     author_html =  ""
 
     # Build avatar image tag
-    author_html << image_tag(avatar_icon(author.try(:email), opts[:size]), width: opts[:size], class: "avatar avatar-inline #{"s#{opts[:size]}" if opts[:size]}", alt:'') if opts[:avatar]
+    author_html << image_tag(avatar_icon(author, opts[:size]), width: opts[:size], class: "avatar avatar-inline #{"s#{opts[:size]}" if opts[:size]}", alt:'') if opts[:avatar]
 
     # Build name span tag
     author_html << content_tag(:span, sanitize(author.name), class: opts[:author_class]) if opts[:name]
@@ -39,29 +45,37 @@ module ProjectsHelper
     if opts[:name]
       link_to(author_html, user_path(author), class: "author_link").html_safe
     else
-      link_to(author_html, user_path(author), class: "author_link has_tooltip", data: { :'original-title' => sanitize(author.name) } ).html_safe
+      title = opts[:title].sub(":name", sanitize(author.name))
+      link_to(author_html, user_path(author), class: "author_link has_tooltip", data: { 'original-title'.to_sym => title, container: 'body' } ).html_safe
     end
   end
 
-  def project_title(project)
-    if project.group
-      content_tag :span do
-        link_to(
-          simple_sanitize(project.group.name), group_path(project.group)
-        ) + ' / ' +
-          link_to(simple_sanitize(project.name),
-                  project_path(project))
+  def project_title(project, name = nil, url = nil)
+    namespace_link =
+      if project.group
+        link_to(simple_sanitize(project.group.name), group_path(project.group))
+      else
+        owner = project.namespace.owner
+        link_to(simple_sanitize(owner.name), user_path(owner))
       end
-    else
-      owner = project.namespace.owner
-      content_tag :span do
-        link_to(
-          simple_sanitize(owner.name), user_path(owner)
-        ) + ' / ' +
-          link_to(simple_sanitize(project.name),
-                  project_path(project))
+
+    project_link = link_to project_path(project), { class: "project-item-select-holder" } do
+      link_output = simple_sanitize(project.name)
+
+      if current_user
+        link_output += project_select_tag :project_path,
+          class: "project-item-select js-projects-dropdown",
+          data: { include_groups: false, order_by: 'last_activity_at' }
       end
+
+      link_output
     end
+    project_link += icon "chevron-down", class: "dropdown-toggle-caret js-projects-dropdown-toggle" if current_user
+
+    full_title = namespace_link + ' / ' + project_link
+    full_title += ' &middot; '.html_safe + link_to(simple_sanitize(name), url) if name
+
+    full_title
   end
 
   def remove_project_message(project)
@@ -72,16 +86,16 @@ module ProjectsHelper
     "You are going to transfer #{project.name_with_namespace} to another owner. Are you ABSOLUTELY sure?"
   end
 
+  def remove_fork_project_message(project)
+    "You are going to remove the fork relationship to source project #{@project.forked_from_project.name_with_namespace}.  Are you ABSOLUTELY sure?"
+  end
+
   def project_nav_tabs
     @nav_tabs ||= get_project_nav_tabs(@project, current_user)
   end
 
   def project_nav_tab?(name)
     project_nav_tabs.include? name
-  end
-
-  def project_active_milestones
-    @project.milestones.active.order("due_date, title ASC")
   end
 
   def project_for_deploy_key(deploy_key)
@@ -102,10 +116,18 @@ module ProjectsHelper
     end
   end
 
+  def user_max_access_in_project(user_id, project)
+    level = project.team.max_member_access(user_id)
+
+    if level
+      Gitlab::Access.options_with_owner.key(level)
+    end
+  end
+
   private
 
   def get_project_nav_tabs(project, current_user)
-    nav_tabs = [:home]
+    nav_tabs = [:home, :forks]
 
     if !project.empty_repo? && can?(current_user, :download_code, project)
       nav_tabs << [:files, :commits, :network, :graphs]
@@ -113,6 +135,10 @@ module ProjectsHelper
 
     if project.repo_exists? && can?(current_user, :read_merge_request, project)
       nav_tabs << :merge_requests
+    end
+
+    if can?(current_user, :read_build, project)
+      nav_tabs << :builds
     end
 
     if can?(current_user, :admin_project, project)
@@ -158,8 +184,8 @@ module ProjectsHelper
     end
   end
 
-  def repository_size(project = nil)
-    "#{(project || @project).repository_size} MB"
+  def repository_size(project = @project)
+    "#{project.repository_size} MB"
   rescue
     # In order to prevent 500 error
     # when application cannot allocate memory
@@ -167,13 +193,20 @@ module ProjectsHelper
     'unknown'
   end
 
-  def default_url_to_repo(project = nil)
-    project = project || @project
-    current_user ? project.url_to_repo : project.http_url_to_repo
+  def default_url_to_repo(project = @project)
+    if default_clone_protocol == "ssh"
+      project.ssh_url_to_repo
+    else
+      project.http_url_to_repo
+    end
   end
 
   def default_clone_protocol
-    current_user ? "ssh" : "http"
+    if !current_user || current_user.require_ssh_key?
+      "http"
+    else
+      "ssh"
+    end
   end
 
   def project_last_activity(project)
@@ -247,14 +280,6 @@ module ProjectsHelper
     filename_path(project, :version)
   end
 
-  def hidden_pass_url(original_url)
-    result = URI(original_url)
-    result.password = '*****' unless result.password.nil?
-    result
-  rescue
-    original_url
-  end
-
   def project_wiki_path_with_version(proj, page, version, is_newest)
     url_params = is_newest ? {} : { version_id: version }
     namespace_project_wiki_path(proj.namespace, proj, page, url_params)
@@ -268,14 +293,6 @@ module ProjectsHelper
       "danger"
     when "finished"
       "success"
-    end
-  end
-
-  def user_max_access_in_project(user, project)
-    level = project.team.max_member_access(user)
-
-    if level
-      Gitlab::Access.options_with_owner.key(level)
     end
   end
 
@@ -298,7 +315,7 @@ module ProjectsHelper
 
   def readme_cache_key
     sha = @project.commit.try(:sha) || 'nil'
-    [@project.id, sha, "readme"].join('-')
+    [@project.path_with_namespace, sha, "readme"].join('-')
   end
 
   def round_commit_count(project)
@@ -315,15 +332,18 @@ module ProjectsHelper
     end
   end
 
+  def current_ref
+    @ref || @repository.try(:root_ref)
+  end
+
   private
 
   def filename_path(project, filename)
     if project && blob = project.repository.send(filename)
       namespace_project_blob_path(
-          project.namespace,
-          project,
-          tree_join(project.default_branch,
-                    blob.name)
+        project.namespace,
+        project,
+        tree_join(project.default_branch, blob.name)
       )
     end
   end

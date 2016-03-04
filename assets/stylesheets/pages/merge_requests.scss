@@ -3,12 +3,10 @@
  *
  */
 .mr-state-widget {
-  background: #FAFAFA;
-  margin-bottom: 20px;
-  color: #666;
-  border: 1px solid #e5e5e5;
-  @include box-shadow(0 1px 1px rgba(0, 0, 0, 0.05));
-  @include border-radius(3px);
+  background: $background-color;
+  color: $gl-gray;
+  border: 1px solid $border-color;
+  @include border-radius(2px);
 
   form {
     margin-bottom: 0;
@@ -20,14 +18,38 @@
   .accept-merge-holder {
     .accept-action {
       display: inline-block;
+      float: left;
+
+      .accept_merge_request {
+        &.ci-pending,
+        &.ci-running {
+          @include btn-orange;
+        }
+
+        &.ci-skipped,
+        &.ci-failed,
+        &.ci-canceled,
+        &.ci-error {
+          @include btn-red;
+        }
+      }
     }
 
     .accept-control {
       display: inline-block;
+      float: left;
       margin: 0;
       margin-left: 20px;
       padding: 5px;
+      padding-top: 12px;
       line-height: 20px;
+
+      &.right {
+        float: right;
+        a {
+          color: $gl-gray;
+        }
+      }
 
       .remove_source_checkbox {
         margin: 0;
@@ -36,7 +58,7 @@
   }
 
   .ci_widget {
-    border-bottom: 1px solid #EEE;
+    border-bottom: 1px solid #eef0f2;
 
     i {
       margin-right: 4px;
@@ -61,18 +83,28 @@
     &.ci-error {
       color: $gl-danger;
     }
+
+    a.monospace {
+      color: inherit;
+    }
   }
 
   .mr-widget-body,
   .ci_widget,
   .mr-widget-footer {
-    padding: 15px;
+    padding: $gl-padding;
+  }
+
+  .normal {
+    color: #5c5d5e;
   }
 
   .mr-widget-body {
     h4 {
-      font-weight: bold;
+      font-weight: 600;
+      font-size: 17px;
       margin: 5px 0;
+      color: #313236;
     }
 
     p:last-child {
@@ -89,22 +121,6 @@
   }
 }
 
-@media(min-width: $screen-sm-max) {
-  .merge-request .merge-request-tabs{
-    li {
-      a {
-        padding: 15px 40px;
-        font-size: 14px;
-      }
-    }
-  }
-}
-
-.merge-request .merge-request-tabs{
-  margin-top: 30px;
-  margin-bottom: 20px;
-}
-
 .mr_source_commit,
 .mr_target_commit {
   .commit {
@@ -118,10 +134,12 @@
 }
 
 .label-branch {
-  color: #222;
+  color: #313236;
   font-family: $monospace_font;
   font-weight: bold;
   overflow: hidden;
+  font-size: 90%;
+  margin: 0 3px;
 }
 
 .mr-list {
@@ -132,12 +150,11 @@
     .merge-request-title {
       margin-bottom: 5px;
       font-size: $list-font-size;
-      font-weight: bold;
+      font-weight: 600;
     }
 
     .merge-request-info {
-      color: #999;
-      font-size: 13px;
+      color: $gl-gray;
     }
 
   }
@@ -158,25 +175,10 @@
   line-height: 1.1;
 }
 
-.merge-request-form-info {
-  padding-top: 15px;
-}
-
 // hide mr close link for inline diff comment form
 .diff-file .close-mr-link,
 .diff-file .reopen-mr-link {
   display: none;
-}
-
-.merge-request-show-labels {
-  a {
-    margin-right: 5px;
-    margin-bottom: 5px;
-    display: inline-block;
-    .color-label {
-      padding: 6px 10px;
-    }
-  }
 }
 
 .merge-request-form .select2-container {
@@ -185,8 +187,53 @@
 
 #modal_merge_info .modal-dialog {
   width: 600px;
+
+  .btn-clipboard {
+    @extend .pull-right;
+
+    margin-right: 20px;
+    margin-top: 5px;
+    position: absolute;
+    right: 0;
+  }
 }
 
 .mr-source-target {
   line-height: 31px;
+}
+
+.disabled-comment-area {
+  padding: 16px 0;
+
+  .disabled-profile {
+    width: 40px;
+    height: 40px;
+    background: $border-gray-dark;
+    border-radius: 20px;
+    display: inline-block;
+    margin-right: 10px;
+  }
+
+  .disabled-comment {
+    background: $gray-light;
+    display: inline-block;
+    vertical-align: top;
+    height: 200px;
+    border-radius: 4px;
+    border: 1px solid $border-gray-normal;
+    padding-top: 90px;
+    text-align: center;
+    right: 20px;
+    position: absolute;
+    left: 70px;
+    margin-bottom: 20px;
+
+    span {
+      color: #B2B2B2;
+
+      a {
+        color: $md-link-color;
+      }
+    }
+  }
 }

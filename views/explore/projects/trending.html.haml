@@ -1,15 +1,10 @@
-- page_title "Trending Projects"
-.explore-title
-  %h3
-    Explore GitLab
-  %p.lead
-    Discover projects and groups. Share your projects with others
-%hr
-.explore-trending-block
-  %p.lead
-    %i.fa.fa-comments-o
-    See most discussed projects for last month
-  %hr
-  .public-projects
-    %ul.bordered-list
-      = render @trending_projects
+- page_title    "Projects"
+- header_title  "Projects", dashboard_projects_path
+
+- if current_user
+  = render 'dashboard/projects_head'
+- else
+  = render 'explore/head'
+
+= render 'explore/projects/nav'
+= render 'projects', projects: @projects

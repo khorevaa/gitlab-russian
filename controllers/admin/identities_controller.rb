@@ -1,6 +1,21 @@
 class Admin::IdentitiesController < Admin::ApplicationController
   before_action :user
-  before_action :identity, except: :index
+  before_action :identity, except: [:index, :new, :create]
+
+  def new
+    @identity = Identity.new
+  end
+
+  def create
+    @identity = Identity.new(identity_params)
+    @identity.user_id = user.id
+
+    if @identity.save
+      redirect_to admin_user_identities_path(@user), notice: 'User identity was successfully created.'
+    else
+      render :new
+    end
+  end
 
   def index
     @identities = @user.identities
@@ -11,6 +26,7 @@ class Admin::IdentitiesController < Admin::ApplicationController
 
   def update
     if @identity.update_attributes(identity_params)
+      RepairLdapBlockedUserService.new(@user).execute
       redirect_to admin_user_identities_path(@user), notice: 'User identity was successfully updated.'
     else
       render :edit
@@ -19,6 +35,7 @@ class Admin::IdentitiesController < Admin::ApplicationController
 
   def destroy
     if @identity.destroy
+      RepairLdapBlockedUserService.new(@user).execute
       redirect_to admin_user_identities_path(@user), notice: 'User identity was successfully removed.'
     else
       redirect_to admin_user_identities_path(@user), alert: 'Failed to remove user identity.'

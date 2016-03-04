@@ -6,35 +6,35 @@
       %p
         Форки
         %span.light.pull-right
-          = ForkedProjectLink.count
+          = number_with_delimiter(ForkedProjectLink.count)
       %p
         Вопросы
         %span.light.pull-right
-          = Issue.count
+          = number_with_delimiter(Issue.count)
       %p
         Запросы слияния
         %span.light.pull-right
-          = MergeRequest.count
+          = number_with_delimiter(MergeRequest.count)
       %p
-        Notes
+        Записки
         %span.light.pull-right
-          = Note.count
+          = number_with_delimiter(Note.count)
       %p
         Фрагменты
         %span.light.pull-right
-          = Snippet.count
+          = number_with_delimiter(Snippet.count)
       %p
         SSH ключи
         %span.light.pull-right
-          = Key.count
+          = number_with_delimiter(Key.count)
       %p
         Итерации
         %span.light.pull-right
-          = Milestone.count
+          = number_with_delimiter(Milestone.count)
       %p
         Активные пользователи
         %span.light.pull-right
-          = User.active.count
+          = number_with_delimiter(User.active.count)
     .col-md-4
       %h4
         Особенности
@@ -55,6 +55,10 @@
         OmniAuth
         %span.light.pull-right
           = boolean_to_icon Gitlab.config.omniauth.enabled
+      %p
+        Ответ по Email
+        %span.light.pull-right
+          = boolean_to_icon Gitlab::IncomingEmail.enabled?
     .col-md-4
       %h4
         Компоненты
@@ -76,6 +80,10 @@
         %span.pull-right
           = API::API::version
       %p
+        Git
+        %span.pull-right
+          = Gitlab::Git.version
+      %p
         Ruby
         %span.pull-right
           #{RUBY_VERSION}p#{RUBY_PATCHLEVEL}
@@ -84,6 +92,11 @@
         Rails
         %span.pull-right
           #{Rails::VERSION::STRING}
+
+      %p
+        = Gitlab::Database.adapter_name
+        %span.pull-right
+          = Gitlab::Database.version
   %hr
   .row
     .col-sm-4
@@ -91,7 +104,7 @@
         %h4 Проекты
         .data
           = link_to admin_namespaces_projects_path do
-            %h1= Project.count
+            %h1= number_with_delimiter(Project.count)
           %hr
           = link_to('Новый проект', new_project_path, class: "btn btn-new")
     .col-sm-4
@@ -99,7 +112,7 @@
         %h4 Пользователи
         .data
           = link_to admin_users_path do
-            %h1= User.count
+            %h1= number_with_delimiter(User.count)
           %hr
           = link_to 'Новый пользователь', new_admin_user_path, class: "btn btn-new"
     .col-sm-4
@@ -107,7 +120,7 @@
         %h4 Группы
         .data
           = link_to admin_groups_path do
-            %h1= Group.count
+            %h1= number_with_delimiter(Group.count)
           %hr
           = link_to 'Новая группа', new_admin_group_path, class: "btn btn-new"
 

@@ -1,17 +1,13 @@
-- page_title "Публичные фрагменты"
-%h3.page-title
-  Публичные фрагменты
+- page_title "By #{@user.name}", "Snippets"
 
-  .pull-right
-    - if current_user
-      = link_to new_snippet_path, class: "btn btn-new btn-grouped", title: "Новый фрагмент" do
-        Добавить новый фрагмент
-      = link_to user_snippets_path(current_user), class: "btn btn-grouped"  do
-        Ваши фрагменты
+%ol.breadcrumb
+  %li
+    = link_to snippets_path do
+      Snippets
+  %li
+    = @user.name
+  .pull-right.hidden-xs
+    = link_to user_path(@user) do
+      #{@user.name} profile page
 
-%p.light
-  Здесь будут перечислены созданные вами или другими пользователями публичные фрагменты
-
-%hr
 = render 'snippets'
-

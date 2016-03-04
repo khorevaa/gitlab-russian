@@ -1,12 +1,12 @@
 = form_for(resource, as: resource_name, url: session_path(resource_name)) do |f|
-  = f.text_field :login, class: "form-control top", placeholder: "Имя пользователя или электропочта", autofocus: "autofocus", autocapitalize: "off", autocorrect: "off"
+  = f.text_field :login, class: "form-control top", placeholder: "Имя аккаунта или Email", autofocus: "autofocus", autocapitalize: "off", autocorrect: "off"
   = f.password_field :password, class: "form-control bottom", placeholder: "Пароль"
   - if devise_mapping.rememberable?
     .remember-me.checkbox
       %label{for: "user_remember_me"}
         = f.check_box :remember_me
-        %span Запомнить меня
+        %span Запомните меня
       .pull-right
         = link_to "Забыли пароль?", new_password_path(resource_name)
   %div
-    = f.submit "Войти", class: "btn btn-save"
+    = f.submit "Вход", class: "btn btn-save"

@@ -1,10 +1,7 @@
-- page_title "Notifications"
-%h3.page-title
-  = page_title
-%p.light
-  These are your global notification settings.
-%hr
+- page_title "Уведомления"
+- header_title page_title, profile_notifications_path
 
+.prepend-top-default
 = form_for @user, url: profile_notifications_path, method: :put, html: { class: 'update-notifications form-horizontal global-notifications-form' } do |f|
   -if @user.errors.any?
     %div.alert.alert-danger
@@ -26,42 +23,39 @@
         = f.label :notification_level, value: Notification::N_DISABLED do
           = f.radio_button :notification_level, Notification::N_DISABLED
           .level-title
-            Disabled
-          %p You will not get any notifications via email
+            Отключено
+          %p Вы не будете получать уведомлений по электронной почте
 
       .radio
         = f.label :notification_level, value: Notification::N_MENTION do
           = f.radio_button :notification_level, Notification::N_MENTION
           .level-title
-            Mention
-          %p You will receive notifications only for comments in which you were @mentioned
+            При упоминании
+          %p Вы будете получать уведомления только о комментариях, в которых вы были @упомянуты
 
       .radio
         = f.label :notification_level, value: Notification::N_PARTICIPATING do
           = f.radio_button :notification_level, Notification::N_PARTICIPATING
           .level-title
-            Participating
-          %p You will only receive notifications from related resources (e.g. from your commits or assigned issues)
+            Участие
+          %p Вы будете получать уведомления только от связанных с вами ресурсов (например, от ваших коммитов или назначенных вопросы)
 
       .radio
         = f.label :notification_level, value: Notification::N_WATCH do
           = f.radio_button :notification_level, Notification::N_WATCH
           .level-title
-            Watch
-          %p You will receive all notifications from projects in which you participate
+            Наблюдатель
+          %p Вы будете получать уведомления о любой активности
 
-  .form-actions
-    = f.submit 'Save changes', class: "btn btn-create"
+  .gray-content-block
+    = f.submit 'Сохранить изменения', class: "btn btn-create"
 
-.clearfix
-  %hr
-.row.all-notifications
+.row.all-notifications.prepend-top-default
   .col-md-6
     %p
-      You can also specify notification level per group or per project.
-      %br
-      By default, all projects and groups will use the notification level set above.
-    %h4 Groups:
+      Вы также можете указать уровень уведомлений для каждой группы или для каждого проекта.
+      По умолчанию все проекты и группы будут использовать уведомлении уровня, указанного выше.
+    %h4 Группы:
     %ul.bordered-list
       - @group_members.each do |group_member|
         - notification = Notification.new(group_member)
@@ -72,7 +66,7 @@
       To specify the notification level per project of a group you belong to,
       %br
       you need to be a member of the project itself, not only its group.
-    %h4 Projects:
+    %h4 Проекты:
     %ul.bordered-list
       - @project_members.each do |project_member|
         - notification = Notification.new(project_member)

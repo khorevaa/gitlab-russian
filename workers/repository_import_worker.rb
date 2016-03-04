@@ -4,31 +4,21 @@ class RepositoryImportWorker
 
   sidekiq_options queue: :gitlab_shell
 
+  attr_accessor :project, :current_user
+
   def perform(project_id)
-    project = Project.find(project_id)
+    @project = Project.find(project_id)
+    @current_user = @project.creator
 
-    import_result = gitlab_shell.send(:import_repository,
-                               project.path_with_namespace,
-                               project.import_url)
-    return project.import_fail unless import_result
+    result = Projects::ImportService.new(project, current_user).execute
 
-    data_import_result =  if project.import_type == 'github'
-                            Gitlab::GithubImport::Importer.new(project).execute
-                          elsif project.import_type == 'gitlab'
-                            Gitlab::GitlabImport::Importer.new(project).execute
-                          elsif project.import_type == 'bitbucket'
-                            Gitlab::BitbucketImport::Importer.new(project).execute
-                          elsif project.import_type == 'google_code'
-                            Gitlab::GoogleCodeImport::Importer.new(project).execute
-                          else
-                            true
-                          end
-    return project.import_fail unless data_import_result
+    if result[:status] == :error
+      project.update(import_error: result[:message])
+      project.import_fail
+      return
+    end
 
+    project.repository.expire_emptiness_caches
     project.import_finish
-    project.save
-    project.satellite.create unless project.satellite.exists?
-    ProjectCacheWorker.perform_async(project.id)
-    Gitlab::BitbucketImport::KeyDeleter.new(project).execute if project.import_type == 'bitbucket'
   end
 end

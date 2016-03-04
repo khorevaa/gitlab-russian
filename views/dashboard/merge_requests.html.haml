@@ -1,11 +1,12 @@
 - page_title "Запросы слияния"
-%h3.page-title
-  Запросы слияния
+- header_title  "Запросы слияния", merge_requests_dashboard_path(assignee_id: current_user.id)
 
+.top-area
+  = render 'shared/issuable/nav', type: :merge_requests
+  .nav-controls
+    = render 'shared/new_project_item_select', path: 'merge_requests/new', label: "Новый запрос слияния"
 
-%p.light
-  Список всех запросов слияния из всех проектов, к которым у вас есть доступ.
-%hr
-.append-bottom-20
-  = render 'shared/issuable/filter', type: :merge_requests
-= render 'shared/merge_requests'
+= render 'shared/issuable/filter', type: :merge_requests
+
+.prepend-top-default
+  = render 'shared/merge_requests'

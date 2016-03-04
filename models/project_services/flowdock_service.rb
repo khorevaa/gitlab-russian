@@ -16,6 +16,7 @@
 #  merge_requests_events :boolean          default(TRUE)
 #  tag_push_events       :boolean          default(TRUE)
 #  note_events           :boolean          default(TRUE), not null
+#  build_events          :boolean          default(FALSE), not null
 #
 
 require "flowdock-git-hook"
@@ -58,6 +59,6 @@ class FlowdockService < Service
       repo_url: "#{Gitlab.config.gitlab.url}/#{project.path_with_namespace}",
       commit_url: "#{Gitlab.config.gitlab.url}/#{project.path_with_namespace}/commit/%s",
       diff_url: "#{Gitlab.config.gitlab.url}/#{project.path_with_namespace}/compare/%s...%s",
-      )
+    )
   end
 end

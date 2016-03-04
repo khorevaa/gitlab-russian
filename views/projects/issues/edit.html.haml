@@ -1,2 +1,8 @@
-- page_title "Edit", "#{@issue.title} (##{@issue.iid})", "Issues"
+- page_title "Правка", "#{@issue.title} (##{@issue.iid})", "Вопросы"
+= render "header_title"
+
+%h3.page-title
+  Правка вопроса ##{@issue.iid}
+%hr
+
 = render "form"

@@ -16,6 +16,7 @@
 #  merge_requests_events :boolean          default(TRUE)
 #  tag_push_events       :boolean          default(TRUE)
 #  note_events           :boolean          default(TRUE), not null
+#  build_events          :boolean          default(FALSE), not null
 #
 
 class BambooService < CiService
@@ -23,27 +24,29 @@ class BambooService < CiService
 
   prop_accessor :bamboo_url, :build_key, :username, :password
 
-  validates :bamboo_url,
-    presence: true,
-    format: { with: /\A#{URI.regexp}\z/ },
-    if: :activated?
+  validates :bamboo_url, presence: true, url: true, if: :activated?
   validates :build_key, presence: true, if: :activated?
   validates :username,
     presence: true,
-    if: ->(service) { service.password? },
-    if: :activated?
+    if: ->(service) { service.activated? && service.password }
   validates :password,
     presence: true,
-    if: ->(service) { service.username? },
-    if: :activated?
+    if: ->(service) { service.activated? && service.username }
 
   attr_accessor :response
 
   after_save :compose_service_hook, if: :activated?
+  before_update :reset_password
 
   def compose_service_hook
     hook = service_hook || build_service_hook
     hook.save
+  end
+
+  def reset_password
+    if bamboo_url_changed? && !password_touched?
+      self.password = nil
+    end
   end
 
   def title
@@ -77,7 +80,7 @@ class BambooService < CiService
   def supported_events
     %w(push)
   end
-  
+
   def build_info(sha)
     url = URI.parse("#{bamboo_url}/rest/api/latest/result?label=#{sha}")
 

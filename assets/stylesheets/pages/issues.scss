@@ -1,17 +1,16 @@
 .issues-list {
   .issue {
-    padding: 10px 15px;
+    padding: 10px $gl-padding;
     position: relative;
 
     .issue-title {
       margin-bottom: 5px;
       font-size: $list-font-size;
-      font-weight: bold;
+      font-weight: 600;
     }
 
     .issue-info {
-      color: #999;
-      font-size: 13px;
+      color: $gl-gray;
     }
 
     .issue-check {
@@ -47,33 +46,29 @@
   }
 }
 
-.participants {
-  margin-bottom: 20px;
-}
-
 .issue-search-form {
   margin: 0;
   height: 24px;
-
-  .issue_search {
-    border: 1px solid #DDD !important;
-    background-color: #f4f4f4;
-  }
-}
-
-.issue-show-labels {
-  a {
-    margin-right: 5px;
-    margin-bottom: 5px;
-    display: inline-block;
-    .color-label {
-      padding: 6px 10px;
-    }
-  }
 }
 
 form.edit-issue {
   margin: 0;
+}
+
+.merge-requests-title {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.merge-request-id {
+  display: inline-block;
+  width: 3em;
+}
+
+.merge-request-status {
+  color: $gl-gray;
+  font-size: 15px;
+  font-weight: bold;
 }
 
 .merge-request,
@@ -137,11 +132,11 @@ form.edit-issue {
   }
 }
 
-h2.issue-title {
-  margin-top: 0;
-  font-weight: bold;
-}
-
 .issue-form .select2-container {
   width: 250px !important;
+}
+
+.issue-closed-by-widget {
+  color: $secondary-text;
+  margin-left: 52px;
 }

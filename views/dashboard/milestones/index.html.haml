@@ -1,21 +1,18 @@
 - page_title "Итерации"
-%h3.page-title
-  Итерации
-  %span.pull-right #{@dashboard_milestones.count} milestones
+- header_title "Итерации", dashboard_milestones_path
 
-%p.light
-  Список всех итераций из всех проектов, к которым у вас есть доступ.
+.top-area
+  = render 'shared/milestones_filter'
 
-%hr
+  .nav-controls
+    = render 'shared/new_project_item_select', path: 'milestones/new', label: "Новая итерация", include_groups: true
 
-= render 'shared/milestones_filter'
 .milestones
-  .panel.panel-default
-    %ul.well-list
-      - if @dashboard_milestones.blank?
-        %li
-          .nothing-here-block No milestones to show
-      - else
-        - @dashboard_milestones.each do |milestone|
-          = render 'milestone', milestone: milestone
-  = paginate @dashboard_milestones, theme: "gitlab"
+  %ul.content-list
+    - if @milestones.blank?
+      %li
+        .nothing-here-block Итерации отсутствуют
+    - else
+      - @milestones.each do |milestone|
+        = render 'milestone', milestone: milestone
+  = paginate @milestones, theme: "gitlab"

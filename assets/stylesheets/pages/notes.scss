@@ -14,10 +14,22 @@ ul.notes {
   margin: 0px;
   padding: 0px;
 
+  .system-note {
+    font-size: 14px;
+    padding-top: 10px;
+    padding-bottom: 10px;
+    background: #FDFDFD;
+
+    .timeline-icon {
+      .avatar {
+        visibility: hidden;
+      }
+    }
+  }
+
   .discussion-header,
   .note-header {
     @extend .cgray;
-    padding-bottom: 15px;
 
     a:hover {
       text-decoration: none;
@@ -34,10 +46,8 @@ ul.notes {
         content: "\00b7";
       }
 
-      font-size: 13px;
-
       a {
-        @extend .cgray;
+        color: $gl-gray;
 
         &:hover {
           text-decoration: underline;
@@ -45,8 +55,9 @@ ul.notes {
       }
     }
     .author {
-      color: #333;
-      font-weight: bold;
+      color: #4c4e54;
+      margin-right: 3px;
+
       &:hover {
         color: $gl-link-color;
       }
@@ -59,8 +70,12 @@ ul.notes {
       margin-top: 1px;
       border: 1px solid #bbb;
       background-color: transparent;
-      color: #999;
+      color: $gl-gray;
     }
+  }
+
+  .discussion-body {
+    padding-top: 15px;
   }
 
   .discussion {
@@ -94,13 +109,9 @@ ul.notes {
           }
         }
 
-        // Reduce left padding of first task list ul element
-        ul.task-list:first-child {
-          padding-left: 10px;
-
-          // sub-tasks should be padded normally
-          ul {
-            padding-left: 20px;
+        ul.task-list {
+          ul:not(.task-list) {
+            padding-left: 1.3em;
           }
         }
 
@@ -117,7 +128,7 @@ ul.notes {
     }
 
     &:last-child {
-      border-bottom: none;
+      border-bottom: 1px solid $border-color;
     }
   }
 }
@@ -133,8 +144,6 @@ ul.notes {
 }
 
 .diff-file .notes_holder {
-  font-size: 13px;
-  line-height: 18px;
   font-family: $regular_font;
 
   td {
@@ -145,6 +154,7 @@ ul.notes {
       text-align: center;
       padding: 10px 0;
       background: #FFF;
+      color: $text-color;
     }
     &.notes_line2 {
       text-align: center;
@@ -176,8 +186,7 @@ ul.notes {
 
     a {
       margin-left: 5px;
-
-      color: #999;
+      color: $gl-gray;
 
       i.fa {
         font-size: 16px;
@@ -226,8 +235,6 @@ ul.notes {
     filter: alpha(opacity=0);
 
     &:hover {
-      width: 38px;
-      font-size: 20px;
       background: $gl-info;
       color: #FFF;
       @include show-add-diff-note;
@@ -236,11 +243,8 @@ ul.notes {
 
   // "show" the icon also if we just hover somewhere over the line
   &:hover > td {
-    background: $hover !important;
-
     .add-diff-note {
       @include show-add-diff-note;
     }
   }
 }
-

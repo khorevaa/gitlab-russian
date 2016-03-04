@@ -16,11 +16,20 @@
 #  merge_requests_events :boolean          default(TRUE)
 #  tag_push_events       :boolean          default(TRUE)
 #  note_events           :boolean          default(TRUE), not null
+#  build_events          :boolean          default(FALSE), not null
 #
 
 class SlackService < Service
   prop_accessor :webhook, :username, :channel
+  boolean_accessor :notify_only_broken_builds
   validates :webhook, presence: true, if: :activated?
+
+  def initialize_properties
+    if properties.nil?
+      self.properties = {}
+      self.notify_only_broken_builds = true
+    end
+  end
 
   def title
     'Slack'
@@ -34,17 +43,24 @@ class SlackService < Service
     'slack'
   end
 
+  def help
+    'This service sends notifications to your Slack channel.<br/>
+    To setup this Service you need to create a new <b>"Incoming webhook"</b> in your Slack integration panel,
+    and enter the Webhook URL below.'
+  end
+
   def fields
     [
       { type: 'text', name: 'webhook',
         placeholder: 'https://hooks.slack.com/services/...' },
       { type: 'text', name: 'username', placeholder: 'username' },
-      { type: 'text', name: 'channel', placeholder: '#channel' }
+      { type: 'text', name: 'channel', placeholder: '#channel' },
+      { type: 'checkbox', name: 'notify_only_broken_builds' },
     ]
   end
 
   def supported_events
-    %w(push issue merge_request note tag_push)
+    %w(push issue merge_request note tag_push build)
   end
 
   def execute(data)
@@ -72,6 +88,8 @@ class SlackService < Service
         MergeMessage.new(data) unless is_update?(data)
       when "note"
         NoteMessage.new(data)
+      when "build"
+        BuildMessage.new(data) if should_build_be_notified?(data)
       end
 
     opt = {}
@@ -80,7 +98,7 @@ class SlackService < Service
 
     if message
       notifier = Slack::Notifier.new(webhook, opt)
-      notifier.ping(message.pretext, attachments: message.attachments)
+      notifier.ping(message.pretext, attachments: message.attachments, fallback: message.fallback)
     end
   end
 
@@ -97,9 +115,21 @@ class SlackService < Service
   def is_update?(data)
     data[:object_attributes][:action] == 'update'
   end
+
+  def should_build_be_notified?(data)
+    case data[:commit][:status]
+    when 'success'
+      !notify_only_broken_builds?
+    when 'failed'
+      true
+    else
+      false
+    end
+  end
 end
 
 require "slack_service/issue_message"
 require "slack_service/push_message"
 require "slack_service/merge_message"
 require "slack_service/note_message"
+require "slack_service/build_message"

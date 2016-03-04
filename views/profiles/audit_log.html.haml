@@ -1,5 +1,8 @@
-- page_title "Audit Log"
-%h3.page-title Audit Log
-%p.light History of authentications
+- page_title "Журнал аудита"
+- header_title page_title, audit_log_profile_path
 
+.alert.alert-help.prepend-top-default
+  История авторизаций
+
+.prepend-top-default
 = render 'event_table', events: @events

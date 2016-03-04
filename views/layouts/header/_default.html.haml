@@ -1,46 +1,46 @@
 %header.navbar.navbar-fixed-top.navbar-gitlab{ class: nav_header_class }
-  .container
-    .header-logo
-      = link_to root_path, class: 'home', title: 'Панель управления', id: 'js-shortcuts-home', data: {toggle: 'tooltip', placement: 'bottom'} do
-        = brand_header_logo
-        .gitlab-text-container
-          %h3 GitLab
+  %div{ class: fluid_layout ? "container-fluid" : "container-fluid" }
     .header-content
       %button.navbar-toggle{type: 'button'}
-        %span.sr-only Toggle navigation
+        %span.sr-only Переключение навигации
         = icon('bars')
 
       .navbar-collapse.collapse
         %ul.nav.navbar-nav.pull-right
-          %li.hidden-sm.hidden-xs
-            = render 'layouts/search'
+          - unless @disable_search_panel
+            %li.hidden-sm.hidden-xs
+              = render 'layouts/search'
           %li.visible-sm.visible-xs
-            = link_to search_path, title: 'Поиск', data: {toggle: 'tooltip', placement: 'bottom'} do
+            = link_to search_path, title: 'Поиск', data: {toggle: 'tooltip', placement: 'bottom', container: 'body'} do
               = icon('search')
-          %li.hidden-xs
-            = link_to help_path, title: 'Помощь', data: {toggle: 'tooltip', placement: 'bottom'} do
-              = icon('question-circle fw')
-          %li
-            = link_to explore_root_path, title: 'Обзор', data: {toggle: 'tooltip', placement: 'bottom'} do
-              = icon('globe fw')
-          %li
-            = link_to user_snippets_path(current_user), title: 'Ваши фрагменты', data: {toggle: 'tooltip', placement: 'bottom'} do
-              = icon('clipboard fw')
+          - if session[:impersonator_id]
+            %li.impersonation
+              = link_to stop_impersonation_admin_users_path, method: :delete, title: 'Stop Impersonation', data: { toggle: 'tooltip', placement: 'bottom', container: 'body' } do
+                = icon('user-secret fw')
           - if current_user.is_admin?
             %li
-              = link_to admin_root_path, title: 'Администраторская', data: {toggle: 'tooltip', placement: 'bottom'} do
+              = link_to admin_root_path, title: 'Администраторская', data: {toggle: 'tooltip', placement: 'bottom', container: 'body'} do
                 = icon('wrench fw')
+          %li
+            = link_to dashboard_todos_path, title: 'Задачи', data: {toggle: 'tooltip', placement: 'bottom', container: 'body'} do
+              %span.badge.todos-pending-count
+                = todos_pending_count
           - if current_user.can_create_project?
-            %li.hidden-xs
-              = link_to new_project_path, title: 'Новый проект', data: {toggle: 'tooltip', placement: 'bottom'} do
+            %li
+              = link_to new_project_path, title: 'Новый проект', data: {toggle: 'tooltip', placement: 'bottom', container: 'body'} do
                 = icon('plus fw')
+          - if Gitlab::Sherlock.enabled?
+            %li
+              = link_to sherlock_transactions_path, title: 'Sherlock Transactions',
+                data: {toggle: 'tooltip', placement: 'bottom', container: 'body'} do
+                = icon('tachometer fw')
           %li
-            = link_to profile_path, title: 'Настройки профиля', data: {toggle: 'tooltip', placement: 'bottom'} do
-              = icon('cog fw')
-          %li
-            = link_to destroy_user_session_path, class: 'logout', method: :delete, title: 'Выход', data: {toggle: 'tooltip', placement: 'bottom'} do
+            = link_to destroy_user_session_path, class: 'logout', method: :delete, title: 'Выход', data: {toggle: 'tooltip', placement: 'bottom', container: 'body'} do
               = icon('sign-out')
 
       %h1.title= title
 
 = render 'shared/outdated_browser'
+- if @project && !@project.empty_repo?
+  :javascript
+    var findFileURL = "#{namespace_project_find_file_path(@project.namespace, @project, @ref || @project.repository.root_ref)}";

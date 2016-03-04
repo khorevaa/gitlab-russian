@@ -16,11 +16,10 @@ require Rails.root.join("app/models/commit")
 class MergeRequestDiff < ActiveRecord::Base
   include Sortable
 
-  # Prevent store of diff
-  # if commits amount more then 200
-  COMMITS_SAFE_SIZE = 200
+  # Prevent store of diff if commits amount more then 500
+  COMMITS_SAFE_SIZE = 500
 
-  attr_reader :commits, :diffs
+  attr_reader :commits, :diffs, :diffs_no_whitespace
 
   belongs_to :merge_request
 
@@ -48,6 +47,17 @@ class MergeRequestDiff < ActiveRecord::Base
     @diffs ||= (load_diffs(st_diffs) || [])
   end
 
+  def diffs_no_whitespace
+    compare_result = Gitlab::CompareResult.new(
+      Gitlab::Git::Compare.new(
+        self.repository.raw_repository,
+        self.target_branch,
+        self.source_sha,
+      ), { ignore_whitespace_change: true }
+    )
+    @diffs_no_whitespace ||= load_diffs(dump_commits(compare_result.diffs))
+  end
+
   def commits
     @commits ||= load_commits(st_commits || [])
   end
@@ -56,11 +66,19 @@ class MergeRequestDiff < ActiveRecord::Base
     commits.first
   end
 
+  def first_commit
+    commits.last
+  end
+
+  def base_commit
+    return nil unless self.base_commit_sha
+
+    merge_request.target_project.commit(self.base_commit_sha)
+  end
+
   def last_commit_short_sha
     @last_commit_short_sha ||= last_commit.short_id
   end
-
-  private
 
   def dump_commits(commits)
     commits.map(&:to_hash)
@@ -124,12 +142,12 @@ class MergeRequestDiff < ActiveRecord::Base
     if new_diffs.any?
       if new_diffs.size > Commit::DIFF_HARD_LIMIT_FILES
         self.state = :overflow_diff_files_limit
-        new_diffs = []
+        new_diffs = new_diffs.first(Commit::DIFF_HARD_LIMIT_LINES)
       end
 
       if new_diffs.sum { |diff| diff.diff.lines.count } > Commit::DIFF_HARD_LIMIT_LINES
         self.state = :overflow_diff_lines_limit
-        new_diffs = []
+        new_diffs = new_diffs.first(Commit::DIFF_HARD_LIMIT_LINES)
       end
     end
 
@@ -139,33 +157,43 @@ class MergeRequestDiff < ActiveRecord::Base
     end
 
     self.st_diffs = new_diffs
+
+    self.base_commit_sha = self.repository.merge_base(self.source_sha, self.target_branch)
+
     self.save
   end
 
   # Collect array of Git::Diff objects
   # between target and source branches
   def unmerged_diffs
-    diffs = compare_result.diffs
-    diffs ||= []
-    diffs
-  rescue Gitlab::Git::Diff::TimeoutError => ex
+    compare_result.diffs || []
+  rescue Gitlab::Git::Diff::TimeoutError
     self.state = :timeout
-    diffs = []
+    []
   end
 
   def repository
     merge_request.target_project.repository
   end
 
-  private
+  def source_sha
+    source_commit = merge_request.source_project.commit(source_branch)
+    source_commit.try(:sha)
+  end
 
   def compare_result
-    @compare_result ||= CompareService.new.execute(
-      merge_request.author,
-      merge_request.source_project,
-      merge_request.source_branch,
-      merge_request.target_project,
-      merge_request.target_branch,
-    )
+    @compare_result ||=
+      begin
+        # Update ref for merge request
+        merge_request.fetch_ref
+
+        Gitlab::CompareResult.new(
+          Gitlab::Git::Compare.new(
+            self.repository.raw_repository,
+            self.target_branch,
+            self.source_sha
+          )
+        )
+      end
   end
 end

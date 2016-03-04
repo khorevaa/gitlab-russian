@@ -1,37 +1,57 @@
+- @no_container = true
+
+- unless can?(current_user, :read_group, @group)
+  - @disable_search_panel = true
+
 = content_for :meta_tags do
   - if current_user
     = auto_discovery_link_tag(:atom, group_url(@group, format: :atom, private_token: current_user.private_token), title: "#{@group.name} activity")
 
-.dashboard
-  .header-with-avatar.clearfix
-    = image_tag group_icon(@group), class: "avatar group-avatar s90"
-    %h3
-      = @group.name
-    .username
-      @#{@group.path}
-    - if @group.description.present?
-      .description
-        = markdown(@group.description, pipeline: :description)
-  %hr
+.cover-block
+  .cover-controls
+    - if @group && can?(current_user, :admin_group, @group)
+      = link_to icon('pencil'), edit_group_path(@group), class: 'btn'
+    - if current_user
+      = link_to icon('rss'), group_path(@group, { format: :atom, private_token: current_user.private_token }), title: "Feed", class: 'btn rss-btn'
 
-  = render 'shared/show_aside'
+  .avatar-holder
+    = link_to group_icon(@group), target: '_blank' do
+      = image_tag group_icon(@group), class: "avatar group-avatar s90"
+  .cover-title
+    = @group.name
 
-  .row
-    %section.activities.col-md-8
-      .hidden-xs
-        - if current_user
-          = render "events/event_last_push", event: @last_push
+  .cover-desc.username
+    @#{@group.path}
 
+  - if @group.description.present?
+    .cover-desc.description
+      = markdown(@group.description, pipeline: :description)
+
+
+  %ul.nav-links
+    %li.active
+      = link_to "#activity", 'data-toggle' => 'tab' do
+        Activity
+    %li
+      = link_to "#projects", 'data-toggle' => 'tab' do
+        Projects
+
+- if can?(current_user, :read_group, @group)
+  %div{ class: container_class }
+    .tab-content
+      .tab-pane.active#activity
+        .activity-filter-block
           - if current_user
-            %ul.nav.nav-pills.event_filter.pull-right
-              %li
-                = link_to group_path(@group, { format: :atom, private_token: current_user.private_token }), title: "Feed", class: 'rss-btn' do
-                  %i.fa.fa-rss
+            = render "events/event_last_push", event: @last_push
 
-          = render 'shared/event_filter'
-          %hr
+            = render 'shared/event_filter'
 
-      .content_list
-      = spinner
-    %aside.side.col-md-4
-      = render "projects", projects: @projects
+        .content_list{data: {href: events_group_path}}
+        = spinner
+
+      .tab-pane#projects
+        = render "projects", projects: @projects
+
+- else
+  %p.nav-links.no-top
+    No projects to show

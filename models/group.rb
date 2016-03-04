@@ -21,6 +21,7 @@ class Group < Namespace
   include Referable
 
   has_many :group_members, dependent: :destroy, as: :source, class_name: 'GroupMember'
+  alias_method :members, :group_members
   has_many :users, through: :group_members
 
   validate :avatar_type, if: ->(user) { user.avatar.present? && user.avatar_changed? }
@@ -47,6 +48,10 @@ class Group < Namespace
     def reference_pattern
       User.reference_pattern
     end
+
+    def visible_to_user(user)
+      where(id: user.authorized_groups.select(:id).reorder(nil))
+    end
   end
 
   def to_reference(_from_project = nil)
@@ -64,7 +69,7 @@ class Group < Namespace
   end
 
   def owners
-    @owners ||= group_members.owners.map(&:user)
+    @owners ||= group_members.owners.includes(:user).map(&:user)
   end
 
   def add_users(user_ids, access_level, current_user = nil)
@@ -109,18 +114,10 @@ class Group < Namespace
     has_owner?(user) && owners.size == 1
   end
 
-  def members
-    group_members
-  end
-
   def avatar_type
     unless self.avatar.image?
       self.errors.add :avatar, "only images allowed"
     end
-  end
-
-  def public_profile?
-    projects.public_only.any?
   end
 
   def post_create_hook

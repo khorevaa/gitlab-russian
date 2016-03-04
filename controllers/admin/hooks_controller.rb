@@ -35,10 +35,10 @@ class Admin::HooksController < Admin::ApplicationController
     }
     @hook.execute(data, 'system_hooks')
 
-    redirect_to :back
+    redirect_back_or_default
   end
 
   def hook_params
-    params.require(:hook).permit(:url)
+    params.require(:hook).permit(:url, :enable_ssl_verification)
   end
 end

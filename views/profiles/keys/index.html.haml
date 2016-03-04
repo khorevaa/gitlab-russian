@@ -1,11 +1,14 @@
 - page_title "SSH ключи"
-%h3.page-title
-  = page_title
-  .pull-right
-    = link_to "Добавить SSH ключ", new_profile_key_path, class: "btn btn-new"
-%p.light
-  Прежде чем вы добавите SSH ключ необходимо
-  = link_to "создать его.", help_page_path("ssh", "README")
-%hr
+- header_title page_title, profile_keys_path
 
+.top-area
+  .nav-text
+    Прежде чем вы добавите SSH ключ необходимо
+    = link_to "создать его.", help_page_path("ssh", "README")
+  .nav-controls
+    = link_to new_profile_key_path, class: "btn btn-new" do
+      = icon('plus')
+      Добавить SSH ключ
+
+.prepend-top-default
 = render 'key_table'

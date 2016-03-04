@@ -1,70 +1,51 @@
 /**
- * Events labels
- *
- */
-.event_label {
-  &.pushed {
-    padding: 0 2px;
-  }
-
-  &.opened {
-    padding: 0 2px;
-  }
-
-  &.closed {
-    padding: 0 2px;
-  }
-
-  &.merged {
-    padding: 0 2px;
-  }
-
-  &.left,
-  &.joined {
-    padding: 0 2px;
-    float: none;
-  }
-}
-
-/**
  * Dashboard events feed
  *
  */
 .event-item {
-  &:first-child {
-    padding-top: 0;
-  }
+  font-size: $gl-font-size;
+  padding: $gl-padding-top 0 $gl-padding-top ($gl-avatar-size + $gl-padding-top);
+  border-bottom: 1px solid $table-border-color;
+  color: #7f8fa4;
 
   &.event-inline {
     .avatar {
       position: relative;
       top: -2px;
     }
+
+    .event-title,
+    .event-item-timestamp {
+      line-height: 40px;
+    }
   }
 
-  padding: 12px 0px;
-  border-bottom: 1px solid #eee;
+  a {
+    color: #4c4e54;
+  }
+
+  .avatar {
+    margin-left: -($gl-avatar-size + $gl-padding-top);
+  }
+
   .event-title {
-    max-width: 70%;
     @include str-truncated(calc(100% - 174px));
-    font-weight: 500;
-    font-size: 14px;
+    font-weight: 600;
+
     .author_name {
       color: #333;
     }
   }
+
   .event-body {
-    font-size: 13px;
-    margin-left: 35px;
-    margin-right: 80px;
-    color: #777;
+    margin-right: 174px;
 
     .event-note {
-      margin-top: 5px;
       word-wrap: break-word;
 
       .md {
-        font-size: 13px;
+        color: #7f8fa4;
+        font-size: $gl-font-size;
 
         iframe.twitter-share-button {
           vertical-align: bottom;
@@ -94,7 +75,7 @@
     .event-note-icon {
       color: #777;
       float: left;
-      font-size: 16px;
+      font-size: $gl-font-size;
       line-height: 16px;
       margin-right: 5px;
     }
@@ -116,8 +97,6 @@
   &:last-child { border:none }
 
   .event_commits {
-    margin-top: 5px;
-
     li {
       &.commit {
         background: transparent;
@@ -125,10 +104,12 @@
         padding-left: 0;
         border: none;
         .commit-row-title {
-          font-size: 12px;
+          font-size: $gl-font-size;
         }
       }
+
       &.commits-stat {
+        margin-top: 3px;
         display: block;
         padding: 3px;
         padding-left: 0;
@@ -142,7 +123,6 @@
 
   .event-item-timestamp {
     float: right;
-    color: #999;
     line-height: 22px;
   }
 }
@@ -153,6 +133,7 @@
  */
 .event-last-push {
   overflow: auto;
+  width: 100%;
   .event-last-push-text {
     @include str-truncated(100%);
     padding: 5px 0;
@@ -166,6 +147,8 @@
 
 @media (max-width: $screen-xs-max) {
   .event-item {
+    padding-left: $gl-padding;
+
     .event-title {
       white-space: normal;
       overflow: visible;
@@ -184,14 +167,5 @@
     .event-item-timestamp {
       display: none;
     }
-  }
-}
-
-.event_filter {
-  li a {
-    font-size: 13px;
-    padding: 5px 10px;
-    background: $background-color;
-    margin-left: 4px;
   }
 }

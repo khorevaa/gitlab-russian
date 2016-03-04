@@ -1,35 +1,35 @@
 .tree-holder {
-  .tree-content-holder {
-    float: left;
-    width: 100%;
+  > .nav-block {
+    margin: 11px 0;
   }
 
-  .tree_progress {
-    display: none;
-    margin: 20px;
-    &.loading {
-      display: block;
+  .file-finder {
+    width: 50%;
+    .file-finder-input {
+      width: 95%;
+      display: inline-block;
     }
   }
 
   .tree-table {
-    @extend .table;
-    @include border-radius(0);
+    margin-bottom: 0;
 
     tr {
+      > td, > th {
+        line-height: 26px;
+      }
+
       &:hover {
         td {
-          background: $hover;
-          border-top: 1px solid #ADF;
-          border-bottom: 1px solid #ADF;
+          background: $row-hover;
         }
         cursor: pointer;
       }
       &.selected {
         td {
-          background: $background-color;
-          border-top: 1px solid #EEE;
-          border-bottom: 1px solid #EEE;
+          background: $gray-dark;
+          border-top: 1px solid $border-gray-dark;
+          border-bottom: 1px solid $border-gray-dark;
         }
       }
     }
@@ -63,48 +63,18 @@
     padding-right: 8px;
 
     .commit-author-name {
-      color: gray;
+      color: $gl-gray;
     }
   }
 
   .tree_commit {
-    color: gray;
+    color: $gl-gray;
 
     .tree-commit-link {
-      color: gray;
+      color: $gl-gray;
 
       &:hover {
         text-decoration: underline;
-      }
-    }
-  }
-
-  .blame {
-    img.avatar {
-      border: 0 none;
-      float: none;
-      margin: 0;
-      padding: 0;
-    }
-    td.blame-commit {
-      background: #f9f9f9;
-      min-width: 350px;
-
-      .commit-author-link {
-        color: #888;
-      }
-    }
-    td.blame-numbers {
-      pre {
-        color: #AAA;
-        white-space: pre;
-      }
-      background: #f1f1f1;
-      border-left: 1px solid #DDD;
-    }
-    td.lines {
-      code {
-        font-family: $monospace_font;
       }
     }
   }
@@ -115,38 +85,41 @@
   margin-right: 15px;
 }
 
-.readme-holder {
-  margin: 0 auto;
-  max-width: $readable-width;
-
-  .readme-file-title {
-    font-size: 14px;
-    font-weight: bold;
-    margin-bottom: 20px;
-    color: #777;
-    border-bottom: 1px solid #DDD;
-    padding: 10px 0;
-  }
-}
-
 .blob-commit-info {
   list-style: none;
+  padding: $gl-padding;
+  background: $background-color;
+  border: 1px solid $border-color;
+  border-bottom: none;
   margin: 0;
-  padding: 0;
-  margin-bottom: 10px;
 
   .commit {
-    padding: 10px 15px;
+    padding: 0;
 
     .commit-row-title {
-      font-size: 13px;
-
       .commit-row-message {
         font-weight: normal;
-        color: #555;
       }
     }
   }
 }
 
 #modal-remove-blob > .modal-dialog { width: 850px; }
+
+.blob-upload-dropzone-previews {
+  text-align: center;
+  border: 2px;
+  border-style: dashed;
+  border-color: $border-color;
+  min-height: 200px;
+}
+
+.upload-link {
+  font-weight: normal;
+  color: $md-link-color;
+}
+
+.tree-controls {
+  float: right;
+  margin-top: 11px;
+}

@@ -7,6 +7,8 @@ module Projects
         description:            @project.description,
         name:                   @project.name,
         path:                   @project.path,
+        shared_runners_enabled: @project.shared_runners_enabled,
+        builds_enabled:         @project.builds_enabled,
         namespace_id:           @params[:namespace].try(:id) || current_user.namespace.id
       }
 
@@ -15,13 +17,6 @@ module Projects
       end
 
       new_project = CreateService.new(current_user, new_params).execute
-
-      if new_project.persisted?
-        if @project.gitlab_ci?
-          ForkRegistrationWorker.perform_async(@project.id, new_project.id, @current_user.private_token)
-        end
-      end
-
       new_project
     end
   end

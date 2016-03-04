@@ -16,6 +16,7 @@
 #  merge_requests_events :boolean          default(TRUE)
 #  tag_push_events       :boolean          default(TRUE)
 #  note_events           :boolean          default(TRUE), not null
+#  build_events          :boolean          default(FALSE), not null
 #
 
 require "gemnasium/gitlab_service"
@@ -57,6 +58,6 @@ class GemnasiumService < Service
       token: token,
       api_key: api_key,
       repo: project.repository.path_to_repo
-      )
+    )
   end
 end

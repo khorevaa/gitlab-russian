@@ -1,9 +1,9 @@
-<p>Welcome <%= @resource.name %>!</p>
+<p>Здравствуйте, <%= @resource.name %>!</p>
 
 <% if @resource.unconfirmed_email.present? %>
-  <p>You can confirm your email (<%= @resource.unconfirmed_email %>) through the link below:</p>
+  <p>Вы можете подтвердить вашу электронную почту (<%= @resource.unconfirmed_email %>) по ссылке ниже:</p>
 <% else %>
-  <p>You can confirm your account through the link below:</p>
+  <p>Вы можете подтвердить ваш аккаунт через ссылку ниже:</p>
 <% end %>
 
-<p><%= link_to 'Confirm your account', confirmation_url(@resource, confirmation_token: @token) %></p>
+<p><%= link_to 'Подтвердить свой аккаунт', confirmation_url(@resource, confirmation_token: @token) %></p>

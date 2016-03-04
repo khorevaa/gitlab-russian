@@ -2,62 +2,63 @@
 #
 # Table name: users
 #
-#  id                            :integer          not null, primary key
-#  email                         :string(255)      default(""), not null
-#  encrypted_password            :string(255)      default(""), not null
-#  reset_password_token          :string(255)
-#  reset_password_sent_at        :datetime
-#  remember_created_at           :datetime
-#  sign_in_count                 :integer          default(0)
-#  current_sign_in_at            :datetime
-#  last_sign_in_at               :datetime
-#  current_sign_in_ip            :string(255)
-#  last_sign_in_ip               :string(255)
-#  created_at                    :datetime
-#  updated_at                    :datetime
-#  name                          :string(255)
-#  admin                         :boolean          default(FALSE), not null
-#  projects_limit                :integer          default(10)
-#  skype                         :string(255)      default(""), not null
-#  linkedin                      :string(255)      default(""), not null
-#  twitter                       :string(255)      default(""), not null
-#  authentication_token          :string(255)
-#  theme_id                      :integer          default(1), not null
-#  bio                           :string(255)
-#  failed_attempts               :integer          default(0)
-#  locked_at                     :datetime
-#  username                      :string(255)
-#  can_create_group              :boolean          default(TRUE), not null
-#  can_create_team               :boolean          default(TRUE), not null
-#  state                         :string(255)
-#  color_scheme_id               :integer          default(1), not null
-#  notification_level            :integer          default(1), not null
-#  password_expires_at           :datetime
-#  created_by_id                 :integer
-#  last_credential_check_at      :datetime
-#  avatar                        :string(255)
-#  confirmation_token            :string(255)
-#  confirmed_at                  :datetime
-#  confirmation_sent_at          :datetime
-#  unconfirmed_email             :string(255)
-#  hide_no_ssh_key               :boolean          default(FALSE)
-#  website_url                   :string(255)      default(""), not null
-#  github_access_token           :string(255)
-#  gitlab_access_token           :string(255)
-#  notification_email            :string(255)
-#  hide_no_password              :boolean          default(FALSE)
-#  password_automatically_set    :boolean          default(FALSE)
-#  bitbucket_access_token        :string(255)
-#  bitbucket_access_token_secret :string(255)
-#  location                      :string(255)
-#  encrypted_otp_secret          :string(255)
-#  encrypted_otp_secret_iv       :string(255)
-#  encrypted_otp_secret_salt     :string(255)
-#  otp_required_for_login        :boolean          default(FALSE), not null
-#  otp_backup_codes              :text
-#  public_email                  :string(255)      default(""), not null
-#  dashboard                     :integer          default(0)
-#  project_view                  :integer          default(0)
+#  id                          :integer          not null, primary key
+#  email                       :string(255)      default(""), not null
+#  encrypted_password          :string(255)      default(""), not null
+#  reset_password_token        :string(255)
+#  reset_password_sent_at      :datetime
+#  remember_created_at         :datetime
+#  sign_in_count               :integer          default(0)
+#  current_sign_in_at          :datetime
+#  last_sign_in_at             :datetime
+#  current_sign_in_ip          :string(255)
+#  last_sign_in_ip             :string(255)
+#  created_at                  :datetime
+#  updated_at                  :datetime
+#  name                        :string(255)
+#  admin                       :boolean          default(FALSE), not null
+#  projects_limit              :integer          default(10)
+#  skype                       :string(255)      default(""), not null
+#  linkedin                    :string(255)      default(""), not null
+#  twitter                     :string(255)      default(""), not null
+#  authentication_token        :string(255)
+#  theme_id                    :integer          default(1), not null
+#  bio                         :string(255)
+#  failed_attempts             :integer          default(0)
+#  locked_at                   :datetime
+#  username                    :string(255)
+#  can_create_group            :boolean          default(TRUE), not null
+#  can_create_team             :boolean          default(TRUE), not null
+#  state                       :string(255)
+#  color_scheme_id             :integer          default(1), not null
+#  notification_level          :integer          default(1), not null
+#  password_expires_at         :datetime
+#  created_by_id               :integer
+#  last_credential_check_at    :datetime
+#  avatar                      :string(255)
+#  confirmation_token          :string(255)
+#  confirmed_at                :datetime
+#  confirmation_sent_at        :datetime
+#  unconfirmed_email           :string(255)
+#  hide_no_ssh_key             :boolean          default(FALSE)
+#  website_url                 :string(255)      default(""), not null
+#  notification_email          :string(255)
+#  hide_no_password            :boolean          default(FALSE)
+#  password_automatically_set  :boolean          default(FALSE)
+#  location                    :string(255)
+#  encrypted_otp_secret        :string(255)
+#  encrypted_otp_secret_iv     :string(255)
+#  encrypted_otp_secret_salt   :string(255)
+#  otp_required_for_login      :boolean          default(FALSE), not null
+#  otp_backup_codes            :text
+#  public_email                :string(255)      default(""), not null
+#  dashboard                   :integer          default(0)
+#  project_view                :integer          default(0)
+#  consumed_timestep           :integer
+#  layout                      :integer          default(0)
+#  hide_project_limit          :boolean          default(FALSE)
+#  unlock_token                :string
+#  otp_grace_period_started_at :datetime
 #
 
 require 'carrierwave/orm/activerecord'
@@ -70,7 +71,10 @@ class User < ActiveRecord::Base
   include Gitlab::CurrentSettings
   include Referable
   include Sortable
+  include CaseSensitivity
   include TokenAuthenticatable
+
+  add_authentication_token_field :authentication_token
 
   default_value_for :admin, false
   default_value_for :can_create_group, gitlab_config.default_can_create_group
@@ -104,7 +108,7 @@ class User < ActiveRecord::Base
   # Profile
   has_many :keys, dependent: :destroy
   has_many :emails, dependent: :destroy
-  has_many :identities, dependent: :destroy
+  has_many :identities, dependent: :destroy, autosave: true
 
   # Groups
   has_many :members, dependent: :destroy
@@ -133,25 +137,23 @@ class User < ActiveRecord::Base
   has_many :assigned_issues,          dependent: :destroy, foreign_key: :assignee_id, class_name: "Issue"
   has_many :assigned_merge_requests,  dependent: :destroy, foreign_key: :assignee_id, class_name: "MergeRequest"
   has_many :oauth_applications, class_name: 'Doorkeeper::Application', as: :owner, dependent: :destroy
-
+  has_one  :abuse_report,             dependent: :destroy
+  has_many :spam_logs,                dependent: :destroy
+  has_many :builds,                   dependent: :nullify, class_name: 'Ci::Build'
+  has_many :todos,                    dependent: :destroy
 
   #
   # Validations
   #
   validates :name, presence: true
-  # Note that a 'uniqueness' and presence check is provided by devise :validatable for email. We do not need to
-  # duplicate that here as the validation framework will have duplicate errors in the event of a failure.
-  validates :email, presence: true, email: { strict_mode: true }
-  validates :notification_email, presence: true, email: { strict_mode: true }
-  validates :public_email, presence: true, email: { strict_mode: true }, allow_blank: true, uniqueness: true
+  validates :notification_email, presence: true, email: true
+  validates :public_email, presence: true, uniqueness: true, email: true, allow_blank: true
   validates :bio, length: { maximum: 255 }, allow_blank: true
   validates :projects_limit, presence: true, numericality: { greater_than_or_equal_to: 0 }
   validates :username,
+    namespace: true,
     presence: true,
-    uniqueness: { case_sensitive: false },
-    exclusion: { in: Gitlab::Blacklist.path },
-    format: { with: Gitlab::Regex.namespace_regex,
-              message: Gitlab::Regex.namespace_regex_message }
+    uniqueness: { case_sensitive: false }
 
   validates :notification_level, inclusion: { in: Notification.notification_levels }, presence: true
   validate :namespace_uniq, if: ->(user) { user.username_changed? }
@@ -174,13 +176,16 @@ class User < ActiveRecord::Base
   after_create :post_create_hook
   after_destroy :post_destroy_hook
 
+  # User's Layout preference
+  enum layout: [:fixed, :fluid]
+
   # User's Dashboard preference
   # Note: When adding an option, it MUST go on the end of the array.
-  enum dashboard: [:projects, :stars]
+  enum dashboard: [:projects, :stars, :project_activity, :starred_project_activity]
 
   # User's Project preference
   # Note: When adding an option, it MUST go on the end of the array.
-  enum project_view: [:readme, :activity]
+  enum project_view: [:readme, :activity, :files]
 
   alias_attribute :private_token, :authentication_token
 
@@ -189,10 +194,22 @@ class User < ActiveRecord::Base
   state_machine :state, initial: :active do
     event :block do
       transition active: :blocked
+      transition ldap_blocked: :blocked
+    end
+
+    event :ldap_block do
+      transition active: :ldap_blocked
     end
 
     event :activate do
       transition blocked: :active
+      transition ldap_blocked: :active
+    end
+
+    state :blocked, :ldap_blocked do
+      def blocked?
+        true
+      end
     end
   end
 
@@ -200,7 +217,7 @@ class User < ActiveRecord::Base
 
   # Scopes
   scope :admins, -> { where(admin: true) }
-  scope :blocked, -> { with_state(:blocked) }
+  scope :blocked, -> { with_states(:blocked, :ldap_blocked) }
   scope :active, -> { with_state(:active) }
   scope :not_in_project, ->(project) { project.users.present? ? where("id not in (:ids)", ids: project.users.map(&:id) ) : all }
   scope :without_projects, -> { where('id NOT IN (SELECT DISTINCT(user_id) FROM members)') }
@@ -215,9 +232,9 @@ class User < ActiveRecord::Base
     def find_for_database_authentication(warden_conditions)
       conditions = warden_conditions.dup
       if login = conditions.delete(:login)
-        where(conditions).where(["lower(username) = :value OR lower(email) = :value", { value: login.downcase }]).first
+        where(conditions).find_by("lower(username) = :value OR lower(email) = :value", value: login.downcase)
       else
-        where(conditions).first
+        find_by(conditions)
       end
     end
 
@@ -232,21 +249,16 @@ class User < ActiveRecord::Base
 
     # Find a User by their primary email or any associated secondary email
     def find_by_any_email(email)
-      user_table = arel_table
-      email_table = Email.arel_table
+      sql = 'SELECT *
+      FROM users
+      WHERE id IN (
+        SELECT id FROM users WHERE email = :email
+        UNION
+        SELECT emails.user_id FROM emails WHERE email = :email
+      )
+      LIMIT 1;'
 
-      # Use ARel to build a query:
-      query = user_table.
-        # SELECT "users".* FROM "users"
-        project(user_table[Arel.star]).
-        # LEFT OUTER JOIN "emails"
-        join(email_table, Arel::Nodes::OuterJoin).
-        # ON "users"."id" = "emails"."user_id"
-        on(user_table[:id].eq(email_table[:user_id])).
-        # WHERE ("user"."email" = '<email>' OR "emails"."email" = '<email>')
-        where(user_table[:email].eq(email).or(email_table[:email].eq(email)))
-
-      find_by_sql(query.to_sql).first
+      User.find_by_sql([sql, { email: email }]).first
     end
 
     def filter(filter_name)
@@ -271,8 +283,13 @@ class User < ActiveRecord::Base
     end
 
     def by_login(login)
-      where('lower(username) = :value OR lower(email) = :value',
-            value: login.to_s.downcase).first
+      return nil unless login
+
+      if login.include?('@'.freeze)
+        unscoped.iwhere(email: login).take
+      else
+        unscoped.iwhere(username: login).take
+      end
     end
 
     def find_by_username!(username)
@@ -280,7 +297,7 @@ class User < ActiveRecord::Base
     end
 
     def by_username_or_id(name_or_id)
-      where('users.username = ? OR users.id = ?', name_or_id.to_s, name_or_id.to_i).first
+      find_by('users.username = ? OR users.id = ?', name_or_id.to_s, name_or_id.to_i)
     end
 
     def build_user(attrs = {})
@@ -331,21 +348,29 @@ class User < ActiveRecord::Base
     @reset_token
   end
 
+  def recently_sent_password_reset?
+    reset_password_sent_at.present? && reset_password_sent_at >= 1.minute.ago
+  end
+
   def disable_two_factor!
     update_attributes(
-      two_factor_enabled:        false,
-      encrypted_otp_secret:      nil,
-      encrypted_otp_secret_iv:   nil,
-      encrypted_otp_secret_salt: nil,
-      otp_backup_codes:          nil
+      two_factor_enabled:          false,
+      encrypted_otp_secret:        nil,
+      encrypted_otp_secret_iv:     nil,
+      encrypted_otp_secret_salt:   nil,
+      otp_grace_period_started_at: nil,
+      otp_backup_codes:            nil
     )
   end
 
   def namespace_uniq
+    # Return early if username already failed the first uniqueness validation
+    return if self.errors[:username].include?('has already been taken')
+
     namespace_name = self.username
     existing_namespace = Namespace.by_path(namespace_name)
     if existing_namespace && existing_namespace != self.namespace
-      self.errors.add :username, "already exists"
+      self.errors.add(:username, 'has already been taken')
     end
   end
 
@@ -381,31 +406,23 @@ class User < ActiveRecord::Base
     end
   end
 
-  # Groups user has access to
+  # Returns the groups a user has access to
   def authorized_groups
-    @authorized_groups ||= begin
-                             group_ids = (groups.pluck(:id) + authorized_projects.pluck(:namespace_id))
-                             Group.where(id: group_ids)
-                           end
+    union = Gitlab::SQL::Union.
+      new([groups.select(:id), authorized_projects.select(:namespace_id)])
+
+    Group.where("namespaces.id IN (#{union.to_sql})")
   end
 
-
-  # Projects user has access to
+  # Returns the groups a user is authorized to access.
   def authorized_projects
-    @authorized_projects ||= begin
-                               project_ids = personal_projects.pluck(:id)
-                               project_ids.push(*groups_projects.pluck(:id))
-                               project_ids.push(*projects.pluck(:id).uniq)
-                               Project.where(id: project_ids)
-                             end
+    Project.where("projects.id IN (#{projects_union.to_sql})")
   end
 
   def owned_projects
     @owned_projects ||=
-      begin
-        namespace_ids = owned_groups.pluck(:id).push(namespace.id)
-        Project.in_namespace(namespace_ids).joins(:namespace)
-      end
+      Project.where('namespace_id IN (?) OR namespace_id = ?',
+                    owned_groups.select(:id), namespace.id).joins(:namespace)
   end
 
   # Team membership in authorized projects
@@ -471,8 +488,19 @@ class User < ActiveRecord::Base
     events = recent_events.code_push.where("created_at > ?", Time.now - 2.hours)
     events = events.where(project_id: project_id) if project_id
 
-    # Take only latest one
-    events = events.recent.limit(1).first
+    # Use the latest event that has not been pushed or merged recently
+    events.recent.find do |event|
+      project = Project.find_by_id(event.project_id)
+      next unless project
+      repo = project.repository
+
+      if repo.branch_names.include?(event.branch_name)
+        merge_requests = MergeRequest.where("created_at >= ?", event.created_at).
+            where(source_project_id: project.id,
+                  source_branch: event.branch_name)
+        merge_requests.empty?
+      end
+    end
   end
 
   def projects_sorted_by_activity
@@ -626,20 +654,19 @@ class User < ActiveRecord::Base
     email.start_with?('temp-email-for-oauth')
   end
 
-  def public_profile?
-    authorized_projects.public_only.any?
-  end
-
-  def avatar_url(size = nil)
+  def avatar_url(size = nil, scale = 2)
     if avatar.present?
       [gitlab_config.url, avatar.url].join
     else
-      GravatarService.new.execute(email, size)
+      GravatarService.new.execute(email, size, scale)
     end
   end
 
   def all_emails
-    [self.email, *self.emails.map(&:email)]
+    all_emails = []
+    all_emails << self.email unless self.temp_oauth_email?
+    all_emails.concat(self.emails.map(&:email))
+    all_emails
   end
 
   def hook_attrs
@@ -683,27 +710,24 @@ class User < ActiveRecord::Base
   end
 
   def starred?(project)
-    starred_projects.exists?(project)
+    starred_projects.exists?(project.id)
   end
 
   def toggle_star(project)
-    user_star_project = users_star_projects.
-      where(project: project, user: self).take
-    if user_star_project
-      user_star_project.destroy
-    else
-      UsersStarProject.create!(project: project, user: self)
+    UsersStarProject.transaction do
+      user_star_project = users_star_projects.
+          where(project: project, user: self).lock(true).first
+
+      if user_star_project
+        user_star_project.destroy
+      else
+        UsersStarProject.create!(project: project, user: self)
+      end
     end
   end
 
   def manageable_namespaces
-    @manageable_namespaces ||=
-      begin
-        namespaces = []
-        namespaces << namespace
-        namespaces += owned_groups
-        namespaces += masters_groups
-      end
+    @manageable_namespaces ||= [namespace] + owned_groups + masters_groups
   end
 
   def namespaces
@@ -716,12 +740,25 @@ class User < ActiveRecord::Base
     Doorkeeper::AccessToken.where(resource_owner_id: self.id, revoked_at: nil)
   end
 
-  def contributed_projects_ids
-    Event.contributions.where(author_id: self).
+  # Returns the projects a user contributed to in the last year.
+  #
+  # This method relies on a subquery as this performs significantly better
+  # compared to a JOIN when coupled with, for example,
+  # `Project.visible_to_user`. That is, consider the following code:
+  #
+  #     some_user.contributed_projects.visible_to_user(other_user)
+  #
+  # If this method were to use a JOIN the resulting query would take roughly 200
+  # ms on a database with a similar size to GitLab.com's database. On the other
+  # hand, using a subquery means we can get the exact same data in about 40 ms.
+  def contributed_projects
+    events = Event.select(:project_id).
+      contributions.where(author_id: self).
       where("created_at > ?", Time.now - 1.year).
-      reorder(project_id: :desc).
-      select(:project_id).
-      uniq.map(&:project_id)
+      uniq.
+      reorder(nil)
+
+    Project.where(id: events)
   end
 
   def restricted_signup_domains
@@ -749,5 +786,36 @@ class User < ActiveRecord::Base
 
   def can_be_removed?
     !solo_owned_groups.present?
+  end
+
+  def ci_authorized_runners
+    @ci_authorized_runners ||= begin
+      runner_ids = Ci::RunnerProject.
+        where("ci_runner_projects.gl_project_id IN (#{ci_projects_union.to_sql})").
+        select(:runner_id)
+      Ci::Runner.specific.where(id: runner_ids)
+    end
+  end
+
+  private
+
+  def projects_union
+    Gitlab::SQL::Union.new([personal_projects.select(:id),
+                            groups_projects.select(:id),
+                            projects.select(:id)])
+  end
+
+  def ci_projects_union
+    scope  = { access_level: [Gitlab::Access::MASTER, Gitlab::Access::OWNER] }
+    groups = groups_projects.where(members: scope)
+    other  = projects.where(members: scope)
+
+    Gitlab::SQL::Union.new([personal_projects.select(:id), groups.select(:id),
+                            other.select(:id)])
+  end
+
+  # Added according to https://github.com/plataformatec/devise/blob/7df57d5081f9884849ca15e4fde179ef164a575f/README.md#activejob-integration
+  def send_devise_notification(notification, *args)
+    devise_mailer.send(notification, self, *args).deliver_later
   end
 end

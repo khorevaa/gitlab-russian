@@ -10,7 +10,7 @@
           %strong= @key.title
         %li
           %span.light Создан:
-          %strong= @key.created_at.stamp("Aug 21, 2011")
+          %strong= @key.created_at.to_s(:medium)
 
   .col-md-8
     %p
@@ -18,5 +18,6 @@
       %code.key-fingerprint= @key.fingerprint
     %pre.well-pre
       = @key.key
-  .pull-right
-    = link_to 'Удалить', path_to_key(@key, is_admin), data: {confirm: 'Вы уверены?'}, method: :delete, class: "btn btn-remove delete-key"
+  .col-md-12
+    .pull-right
+      = link_to 'Удалить', path_to_key(@key, is_admin), data: {confirm: 'Вы уверены?'}, method: :delete, class: "btn btn-remove delete-key"

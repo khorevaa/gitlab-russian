@@ -1,12 +1,13 @@
-- page_title "Logs"
+- page_title "Журналы"
 - loggers = [Gitlab::GitLogger, Gitlab::AppLogger,
              Gitlab::ProductionLogger, Gitlab::SidekiqLogger]
-%ul.nav.nav-tabs.log-tabs
+%ul.nav-links.log-tabs
   - loggers.each do |klass|
     %li{ class: (klass == Gitlab::GitLogger ? 'active' : '') }
       = link_to klass::file_name, "##{klass::file_name_noext}",
           'data-toggle' => 'tab'
-%p.light To prevent performance issues admin logs output the last 2000 lines
+.gray-content-block
+  Для предотвращения проблем с производительностью записывается вывод последних 2000 строк
 .tab-content
   - loggers.each do |klass|
     .tab-pane{ class: (klass == Gitlab::GitLogger ? 'active' : ''),
@@ -18,7 +19,7 @@
           .pull-right
             = link_to '#', class: 'log-bottom' do
               %i.fa.fa-arrow-down
-              Scroll down
+              Опуститься вниз
         .file-content.logs
           %ol
             - klass.read_latest.each do |line|

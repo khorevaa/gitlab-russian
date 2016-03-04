@@ -28,9 +28,22 @@ module MilestonesHelper
         Milestone.where(project_id: @projects)
       end.active
 
-    grouped_milestones = Milestones::GroupService.new(milestones).execute
+    epoch = DateTime.parse('1970-01-01')
+    grouped_milestones = GlobalMilestone.build_collection(milestones)
+    grouped_milestones = grouped_milestones.sort_by { |x| x.due_date.nil? ? epoch : x.due_date }
     grouped_milestones.unshift(Milestone::None)
+    grouped_milestones.unshift(Milestone::Any)
 
-    options_from_collection_for_select(grouped_milestones, 'title', 'title', params[:milestone_title])
+    options_from_collection_for_select(grouped_milestones, 'name', 'title', params[:milestone_title])
+  end
+
+  def milestone_remaining_days(milestone)
+    if milestone.expired?
+      content_tag(:strong, 'expired')
+    elsif milestone.due_date
+      days    = milestone.remaining_days
+      content = content_tag(:strong, days)
+      content << " #{'day'.pluralize(days)} remaining"
+    end
   end
 end

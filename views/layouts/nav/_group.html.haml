@@ -1,6 +1,6 @@
 %ul.nav.nav-sidebar
   = nav_link do
-    = link_to root_path, title: 'Вернуться к панели управления', data: {placement: 'right'}, class: 'back-link' do
+    = link_to root_path, title: 'Вернуться к панели управления', class: 'back-link' do
       = icon('caret-square-o-left fw')
       %span
         Панель управления
@@ -8,38 +8,39 @@
   %li.separate-item
 
   = nav_link(path: 'groups#show', html_options: {class: 'home'}) do
-    = link_to group_path(@group), title: 'Домой', data: {placement: 'right'} do
+    = link_to group_path(@group), title: 'Домой' do
       = icon('dashboard fw')
       %span
         Группа
-  - if current_user
-    = nav_link(controller: [:group, :milestones]) do
-      = link_to group_milestones_path(@group), title: 'Итерации', data: {placement: 'right'} do
-        = icon('clock-o fw')
+  - if can?(current_user, :read_group, @group)
+    - if current_user
+      = nav_link(controller: [:group, :milestones]) do
+        = link_to group_milestones_path(@group), title: 'Итерации' do
+          = icon('clock-o fw')
+          %span
+            Итерации
+    = nav_link(path: 'groups#issues') do
+      = link_to issues_group_path(@group), title: 'Вопросы' do
+        = icon('exclamation-circle fw')
         %span
-          Итерации
-  = nav_link(path: 'groups#issues') do
-    = link_to issues_group_path(@group), title: 'Вопросы', data: {placement: 'right'} do
-      = icon('exclamation-circle fw')
-      %span
-        Вопросы
-        - if current_user
-          %span.count= Issue.opened.of_group(@group).count
-  = nav_link(path: 'groups#merge_requests') do
-    = link_to merge_requests_group_path(@group), title: 'Запросы слияния', data: {placement: 'right'} do
-      = icon('tasks fw')
-      %span
-        Запросы слияния
-        - if current_user
-          %span.count= MergeRequest.opened.of_group(@group).count
-  = nav_link(controller: [:group_members]) do
-    = link_to group_group_members_path(@group), title: 'Члены группы', data: {placement: 'right'} do
-      = icon('users fw')
-      %span
-        Члены группы
-  - if can?(current_user, :admin_group, @group)
-    = nav_link(html_options: { class: "separate-item" }) do
-      = link_to edit_group_path(@group), title: 'Настройки', data: {placement: 'right'} do
-        = icon ('cogs fw')
+          Вопросы
+          - if current_user
+            %span.count= number_with_delimiter(Issue.opened.of_group(@group).count)
+    = nav_link(path: 'groups#merge_requests') do
+      = link_to merge_requests_group_path(@group), title: 'Запросы слияния' do
+        = icon('tasks fw')
         %span
-          Настройки
+          Запросы слияния
+          - if current_user
+            %span.count= number_with_delimiter(MergeRequest.opened.of_group(@group).count)
+    = nav_link(controller: [:group_members]) do
+      = link_to group_group_members_path(@group), title: 'Члены группы' do
+        = icon('users fw')
+        %span
+          Члены группы
+    - if can?(current_user, :admin_group, @group)
+      = nav_link(html_options: { class: "separate-item" }) do
+        = link_to edit_group_path(@group), title: 'Настройки' do
+          = icon ('cogs fw')
+          %span
+            Настройки

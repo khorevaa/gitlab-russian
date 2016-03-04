@@ -1,18 +1,21 @@
 %ul.nav.nav-sidebar
-  = nav_link(path: 'projects#trending') do
-    = link_to explore_root_path, title: 'Трендовые проекты', data: {placement: 'right'} do
-      = icon('comments fw')
-      %span Трендовые проекты
-  = nav_link(path: 'projects#starred') do
-    = link_to starred_explore_projects_path, title: 'Избранные проекты', data: {placement: 'right'} do
-      = icon('star fw')
-      %span Избранные проекты
-  = nav_link(path: 'projects#index') do
-    = link_to explore_projects_path, title: 'Все проекты', data: {placement: 'right'} do
-      = icon('bookmark fw')
-      %span Все проекты
+  = nav_link(path: ['dashboard#show', 'root#show', 'projects#trending', 'projects#starred', 'projects#index'], html_options: {class: 'home'}) do
+    = link_to explore_root_path, title: 'Проекты' do
+      = icon('home fw')
+      %span
+        Проекты
   = nav_link(controller: :groups) do
-    = link_to explore_groups_path, title: 'Все группы', data: {placement: 'right'} do
+    = link_to explore_groups_path, title: 'Группы' do
       = icon('group fw')
-      %span Все группы
-
+      %span
+        Группы
+  = nav_link(controller: :snippets) do
+    = link_to explore_snippets_path, title: 'Фрагменты' do
+      = icon('clipboard fw')
+      %span
+        Фрагменты
+  = nav_link(controller: :help) do
+    = link_to help_path, title: 'Помощь' do
+      = icon('question-circle fw')
+      %span
+        Помощь

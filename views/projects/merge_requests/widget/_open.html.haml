@@ -3,8 +3,6 @@
   .mr-widget-body
     - if @project.archived?
       = render 'projects/merge_requests/widget/open/archived'
-    - elsif !@project.satellite.exists?
-      = render 'projects/merge_requests/widget/open/no_satellite'
     - elsif @merge_request.commits.blank?
       = render 'projects/merge_requests/widget/open/nothing'
     - elsif @merge_request.branch_missing?
@@ -15,6 +13,8 @@
       = render 'projects/merge_requests/widget/open/conflicts'
     - elsif @merge_request.work_in_progress?
       = render 'projects/merge_requests/widget/open/wip'
+    - elsif @merge_request.merge_when_build_succeeds?
+      = render 'projects/merge_requests/widget/open/merge_when_build_succeeds'
     - elsif !@merge_request.can_be_merged_by?(current_user)
       = render 'projects/merge_requests/widget/open/not_allowed'
     - elsif @merge_request.can_be_merged?
@@ -26,4 +26,4 @@
         %i.fa.fa-check
         Accepting this merge request will close #{"issue".pluralize(@closes_issues.size)}
         = succeed '.' do
-          != gfm(issues_sentence(@closes_issues))
+          != markdown issues_sentence(@closes_issues), pipeline: :gfm

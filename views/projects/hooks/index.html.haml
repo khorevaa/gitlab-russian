@@ -19,7 +19,7 @@
       = f.text_field :url, class: "form-control", placeholder: 'http://example.com/trigger-ci.json'
   .form-group
     = f.label :url, "Trigger", class: 'control-label'
-    .col-sm-10
+    .col-sm-10.prepend-top-10
       %div
         = f.check_box :push_events, class: 'pull-left'
         .prepend-left-20
@@ -47,14 +47,28 @@
           = f.label :issues_events, class: 'list-label' do
             %strong Issues events
           %p.light
-            This url will be triggered when an issue is created
+            This url will be triggered when an issue is created/updated/merged
       %div
         = f.check_box :merge_requests_events, class: 'pull-left'
         .prepend-left-20
           = f.label :merge_requests_events, class: 'list-label' do
             %strong Merge Request events
           %p.light
-            This url will be triggered when a merge request is created
+            This url will be triggered when a merge request is created/updated/merged
+      %div
+        = f.check_box :build_events, class: 'pull-left'
+        .prepend-left-20
+          = f.label :build_events, class: 'list-label' do
+            %strong Build events
+          %p.light
+            This url will be triggered when the build status changes
+  .form-group
+    = f.label :enable_ssl_verification, "SSL verification", class: 'control-label checkbox'
+    .col-sm-10
+      .checkbox
+        = f.label :enable_ssl_verification do
+          = f.check_box :enable_ssl_verification
+          %strong Enable SSL verification
   .form-actions
     = f.submit "Add Web Hook", class: "btn btn-create"
 
@@ -71,6 +85,7 @@
           .clearfix
             %span.monospace= hook.url
           %p
-            - %w(push_events tag_push_events issues_events note_events merge_requests_events).each do |trigger|
+            - %w(push_events tag_push_events issues_events note_events merge_requests_events build_events).each do |trigger|
               - if hook.send(trigger)
                 %span.label.label-gray= trigger.titleize
+            SSL Verification: #{hook.enable_ssl_verification ? "enabled" : "disabled"}

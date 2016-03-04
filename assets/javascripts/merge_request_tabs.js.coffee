@@ -5,7 +5,7 @@
 #
 # ### Example Markup
 #
-#   <ul class="nav nav-tabs merge-request-tabs">
+#   <ul class="nav-links merge-request-tabs">
 #     <li class="notes-tab active">
 #       <a data-action="notes" data-target="#notes" data-toggle="tab" href="/foo/bar/merge_requests/1">
 #         Discussion
@@ -43,6 +43,7 @@
 #
 class @MergeRequestTabs
   diffsLoaded: false
+  buildsLoaded: false
   commitsLoaded: false
 
   constructor: (@opts = {}) ->
@@ -54,6 +55,12 @@ class @MergeRequestTabs
 
   bindEvents: ->
     $(document).on 'shown.bs.tab', '.merge-request-tabs a[data-toggle="tab"]', @tabShown
+    $(document).on 'click', '.js-show-tab', @showTab
+
+  showTab: (event) =>
+    event.preventDefault()
+
+    @activateTab $(event.target).data('action')
 
   tabShown: (event) =>
     $target = $(event.target)
@@ -63,8 +70,15 @@ class @MergeRequestTabs
       @loadCommits($target.attr('href'))
     else if action == 'diffs'
       @loadDiff($target.attr('href'))
+    else if action == 'builds'
+      @loadBuilds($target.attr('href'))
 
     @setCurrentAction(action)
+
+  scrollToElement: (container) ->
+    if window.location.hash
+      $el = $("div#{container} #{window.location.hash}")
+      $('body').scrollTo($el.offset().top) if $el.length
 
   # Activate a tab based on the current action
   activateTab: (action) ->
@@ -96,7 +110,7 @@ class @MergeRequestTabs
     action = 'notes' if action == 'show'
 
     # Remove a trailing '/commits' or '/diffs'
-    new_state = @_location.pathname.replace(/\/(commits|diffs)(\.html)?\/?$/, '')
+    new_state = @_location.pathname.replace(/\/(commits|diffs|builds)(\.html)?\/?$/, '')
 
     # Append the new action if we're on a tab other than 'notes'
     unless action == 'notes'
@@ -119,9 +133,10 @@ class @MergeRequestTabs
     @_get
       url: "#{source}.json"
       success: (data) =>
-        document.getElementById('commits').innerHTML = data.html
+        document.querySelector("div#commits").innerHTML = data.html
         $('.js-timeago').timeago()
         @commitsLoaded = true
+        @scrollToElement("#commits")
 
   loadDiff: (source) ->
     return if @diffsLoaded
@@ -129,16 +144,33 @@ class @MergeRequestTabs
     @_get
       url: "#{source}.json" + @_location.search
       success: (data) =>
-        document.getElementById('diffs').innerHTML = data.html
+        document.querySelector("div#diffs").innerHTML = data.html
+        $('div#diffs .js-syntax-highlight').syntaxHighlight()
+        @expandViewContainer() if @diffViewType() is 'parallel'
         @diffsLoaded = true
+        @scrollToElement("#diffs")
 
-  toggleLoading: ->
-    $('.mr-loading-status .loading').toggle()
+  loadBuilds: (source) ->
+    return if @buildsLoaded
+
+    @_get
+      url: "#{source}.json"
+      success: (data) =>
+        document.querySelector("div#builds").innerHTML = data.html
+        $('.js-timeago').timeago()
+        @buildsLoaded = true
+        @scrollToElement("#builds")
+
+  # Show or hide the loading spinner
+  #
+  # status - Boolean, true to show, false to hide
+  toggleLoading: (status) ->
+    $('.mr-loading-status .loading').toggle(status)
 
   _get: (options) ->
     defaults = {
-      beforeSend: @toggleLoading
-      complete: @toggleLoading
+      beforeSend: => @toggleLoading(true)
+      complete:   => @toggleLoading(false)
       dataType: 'json'
       type: 'GET'
     }
@@ -146,3 +178,10 @@ class @MergeRequestTabs
     options = $.extend({}, defaults, options)
 
     $.ajax(options)
+
+  # Returns diff view type
+  diffViewType: ->
+    $('.inline-parallel-buttons a.active').data('view-type')
+
+  expandViewContainer: ->
+    $('.container-fluid').removeClass('container-limited')

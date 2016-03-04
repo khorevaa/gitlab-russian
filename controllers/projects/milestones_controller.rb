@@ -11,11 +11,12 @@ class Projects::MilestonesController < Projects::ApplicationController
   respond_to :html
 
   def index
-    @milestones = case params[:state]
-                  when 'all'; @project.milestones.order("state, due_date DESC")
-                  when 'closed'; @project.milestones.closed.order("due_date DESC")
-                  else @project.milestones.active.order("due_date ASC")
-                  end
+    @milestones =
+      case params[:state]
+      when 'all' then @project.milestones.reorder(due_date: :desc, title: :asc)
+      when 'closed' then @project.milestones.closed.reorder(due_date: :desc, title: :asc)
+      else @project.milestones.active.reorder(due_date: :asc, title: :asc)
+      end
 
     @milestones = @milestones.includes(:project)
     @milestones = @milestones.page(params[:page]).per(PER_PAGE)
@@ -34,6 +35,7 @@ class Projects::MilestonesController < Projects::ApplicationController
     @issues = @milestone.issues
     @users = @milestone.participants.uniq
     @merge_requests = @milestone.merge_requests
+    @labels = @milestone.labels
   end
 
   def create
@@ -66,12 +68,7 @@ class Projects::MilestonesController < Projects::ApplicationController
   def destroy
     return access_denied! unless can?(current_user, :admin_milestone, @project)
 
-    update_params = { milestone: nil }
-    @milestone.issues.each do |issue|
-      Issues::UpdateService.new(@project, current_user, update_params).execute(issue)
-    end
-
-    @milestone.destroy
+    Milestones::DestroyService.new(project, current_user).execute(milestone)
 
     respond_to do |format|
       format.html { redirect_to namespace_project_milestones_path }
@@ -80,11 +77,7 @@ class Projects::MilestonesController < Projects::ApplicationController
   end
 
   def sort_issues
-    @issues = @milestone.issues.where(id: params['sortable_issue'])
-    @issues.each do |issue|
-      issue.position = params['sortable_issue'].index(issue.id.to_s) + 1
-      issue.save
-    end
+    @milestone.sort_issues(params['sortable_issue'].map(&:to_i))
 
     render json: { saved: true }
   end

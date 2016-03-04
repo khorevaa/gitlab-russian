@@ -1,11 +1,10 @@
-- page_title "Starred Projects"
-.explore-trending-block
-  %p.lead
-    %i.fa.fa-star
-    See most starred projects
-  %hr
-  .public-projects
-    %ul.bordered-list
-      = render @starred_projects
+- page_title    "Projects"
+- header_title  "Projects", dashboard_projects_path
 
-  = paginate @starred_projects, theme: 'gitlab'
+- if current_user
+  = render 'dashboard/projects_head'
+- else
+  = render 'explore/head'
+
+= render 'explore/projects/nav'
+= render 'projects', projects: @projects

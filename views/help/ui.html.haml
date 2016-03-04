@@ -15,6 +15,8 @@
     %li
       = link_to 'Tables', '#tables'
     %li
+      = link_to 'Nav', '#nav'
+    %li
       = link_to 'Buttons', '#buttons'
     %li
       = link_to 'Panels', '#panels'
@@ -29,18 +31,50 @@
 
   %h2#blocks Blocks
 
-  %h3
-    %code .well
+  %h4
+    %code .gray-content-block
 
+  .gray-content-block.middle-block
+    %h4 Normal block inside content
+    = lorem
 
-  .well
-    %h4 Something
+  .gray-content-block.second-block
+    %h4 Second block
     = lorem
 
 
+  %h4
+    %code .cover-block
+  %br
+  .cover-block
+    .avatar-holder
+      = image_tag avatar_icon('admin@example.com', 90), class: "avatar s90", alt: ''
+    .cover-title
+      John Smith
+
+    .cover-desc
+      = lorem
+
+    .cover-controls
+      = link_to '#', class: 'btn btn-gray' do
+        = icon('pencil')
+      &nbsp;
+      = link_to '#', class: 'btn btn-gray' do
+        = icon('rss')
+
   %h2#lists Lists
 
-  %h3
+  %h4
+    %code .content-list
+  %ul.content-list
+    %li
+      One item
+    %li
+      One item
+    %li
+      One item
+
+  %h4
     %code .well-list
   %ul.well-list
     %li
@@ -50,7 +84,7 @@
     %li
       One item
 
-  %h3
+  %h4
     %code .panel .well-list
 
   .panel.panel-default
@@ -63,7 +97,7 @@
       %li
         One item
 
-  %h3
+  %h4
     %code .bordered-list
   %ul.bordered-list
     %li
@@ -102,11 +136,47 @@
           %td the Bird
           %td @twitter
 
+  %h2#navs Navigation
+
+  %h4
+    %code .top-area
+  %p Holder for top page navigation. Includes navigation, search field, sorting and button
+
+  .example
+    .top-area
+      %ul.nav-links
+        %li.active
+          %a Open
+        %li
+          %a Closed
+      .nav-controls
+        = text_field_tag 'sample', nil, class: 'form-control'
+        .dropdown
+          %button.dropdown-toggle.btn{type: 'button', 'data-toggle' => 'dropdown'}
+            %span Sort by name
+            %b.caret
+          %ul.dropdown-menu
+            %li
+              %a Sort by date
+
+        = link_to 'New issue', '#', class: 'btn btn-new'
+
+  %h4
+    %code .nav-links
+  %p Only nav links without button and search
+  .example
+    %ul.nav-links
+      %li.active
+        %a Open
+      %li
+        %a Closed
+
 
   %h2#buttons Buttons
 
   .example
     %button.btn.btn-default{:type => "button"} Default
+    %button.btn.btn-gray{:type => "button"} Gray
     %button.btn.btn-primary{:type => "button"} Primary
     %button.btn.btn-success{:type => "button"} Success
     %button.btn.btn-info{:type => "button"} Info
@@ -158,7 +228,7 @@
 
   %h2#forms Forms
 
-  %h3
+  %h4
     %code form.horizontal-form
 
   %form.form-horizontal
@@ -180,7 +250,7 @@
       .col-sm-offset-2.col-sm-10
         %button.btn.btn-default{:type => "submit"} Sign in
 
-  %h3
+  %h4
     %code form
 
   %form
@@ -197,7 +267,7 @@
     %button.btn.btn-default{:type => "submit"} Sign in
 
   %h2#file File
-  %h3
+  %h4
     %code .file-holder
 
   - blob = Snippet.new(content: "Wow\nSuch\nFile")
@@ -208,13 +278,12 @@
         .file-actions
           .btn-group
             %a.btn Edit
-            %a.btn Remove
+            %a.btn.btn-danger Remove
       .file-contenta.code
         = render 'shared/file_highlight', blob: blob
 
-
   %h2#markdown Markdown
-  %h3
+  %h4
     %code .md or .wiki and others
 
   Markdown rendering has a bit different css and presented in next UI elements:

@@ -1,4 +1,4 @@
-class Notify < ActionMailer::Base
+class Notify < BaseMailer
   include ActionDispatch::Routing::PolymorphicRoutes
 
   include Emails::Issues
@@ -7,29 +7,17 @@ class Notify < ActionMailer::Base
   include Emails::Projects
   include Emails::Profile
   include Emails::Groups
+  include Emails::Builds
 
-  add_template_helper ApplicationHelper
-  add_template_helper GitlabMarkdownHelper
   add_template_helper MergeRequestsHelper
   add_template_helper EmailsHelper
-
-  attr_accessor :current_user
-  helper_method :current_user, :can?
-
-  default from: Proc.new { default_sender_address.format }
-  default reply_to: Gitlab.config.gitlab.email_reply_to
-
-  # Just send email with 2 seconds delay
-  def self.delay
-    delay_for(2.seconds)
-  end
 
   def test_email(recipient_email, subject, body)
     mail(to: recipient_email,
          subject: subject,
          body: body.html_safe,
          content_type: 'text/html'
-    )
+        )
   end
 
   # Splits "gitlab.corp.company.com" up into "gitlab.corp.company.com",
@@ -46,19 +34,12 @@ class Notify < ActionMailer::Base
     allowed_domains
   end
 
-  private
-
-  # The default email address to send emails from
-  def default_sender_address
-    address = Mail::Address.new(Gitlab.config.gitlab.email_from)
-    address.display_name = Gitlab.config.gitlab.email_display_name
-    address
-  end
-
   def can_send_from_user_email?(sender)
     sender_domain = sender.email.split("@").last
     self.class.allowed_email_domains.include?(sender_domain)
   end
+
+  private
 
   # Return an email address that displays the name of the sender.
   # Only the displayed name changes; the actual email address is always the same.
@@ -83,14 +64,6 @@ class Notify < ActionMailer::Base
   def recipient(recipient_id)
     @current_user = User.find(recipient_id)
     @current_user.notification_email
-  end
-
-  # Set the References header field
-  #
-  # local_part - The local part of the referenced message ID
-  #
-  def set_reference(local_part)
-    headers["References"] = "<#{local_part}@#{Gitlab.config.gitlab.host}>"
   end
 
   # Formats arguments into a String suitable for use as an email subject
@@ -126,14 +99,31 @@ class Notify < ActionMailer::Base
     "<#{model_name}_#{model.id}@#{Gitlab.config.gitlab.host}>"
   end
 
+  def mail_thread(model, headers = {})
+    add_project_headers
+    headers["X-GitLab-#{model.class.name}-ID"] = model.id
+    headers['X-GitLab-Reply-Key'] = reply_key
+
+    if Gitlab::IncomingEmail.enabled?
+      address = Mail::Address.new(Gitlab::IncomingEmail.reply_address(reply_key))
+      address.display_name = @project.name_with_namespace
+
+      headers['Reply-To'] = address
+
+      @reply_by_email = true
+    end
+
+    mail(headers)
+  end
+
   # Send an email that starts a new conversation thread,
   # with headers suitable for grouping by thread in email clients.
   #
   # See: mail_answer_thread
-  def mail_new_thread(model, headers = {}, &block)
+  def mail_new_thread(model, headers = {})
     headers['Message-ID'] = message_id(model)
-    headers['X-GitLab-Project'] = "#{@project.name} | " if @project
-    mail(headers, &block)
+
+    mail_thread(model, headers)
   end
 
   # Send an email that responds to an existing conversation thread,
@@ -144,19 +134,25 @@ class Notify < ActionMailer::Base
   #  * have a subject that begin by 'Re: '
   #  * have a 'In-Reply-To' or 'References' header that references the original 'Message-ID'
   #
-  def mail_answer_thread(model, headers = {}, &block)
+  def mail_answer_thread(model, headers = {})
+    headers['Message-ID'] = "<#{SecureRandom.hex}@#{Gitlab.config.gitlab.host}>"
     headers['In-Reply-To'] = message_id(model)
     headers['References'] = message_id(model)
-    headers['X-GitLab-Project'] = "#{@project.name} | " if @project
 
-    if headers[:subject]
-      headers[:subject].prepend('Re: ')
-    end
+    headers[:subject].prepend('Re: ') if headers[:subject]
 
-    mail(headers, &block)
+    mail_thread(model, headers)
   end
 
-  def can?
-    Ability.abilities.allowed?(user, action, subject)
+  def reply_key
+    @reply_key ||= SentNotification.reply_key
+  end
+
+  def add_project_headers
+    return unless @project
+
+    headers['X-GitLab-Project'] = @project.name
+    headers['X-GitLab-Project-Id'] = @project.id
+    headers['X-GitLab-Project-Path'] = @project.path_with_namespace
   end
 end

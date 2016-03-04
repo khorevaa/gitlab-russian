@@ -16,6 +16,8 @@ class Dispatcher
     shortcut_handler = null
 
     switch page
+      when 'explore:projects:index', 'explore:projects:starred', 'explore:projects:trending'
+        Dashboard.init()
       when 'projects:issues:index'
         Issues.init()
         shortcut_handler = new ShortcutsNavigation()
@@ -28,6 +30,8 @@ class Dispatcher
       when 'projects:milestones:new', 'projects:milestones:edit'
         new ZenMode()
         new DropzoneInput($('.milestone-form'))
+      when 'groups:milestones:new'
+        new ZenMode()
       when 'projects:compare:show'
         new Diff()
       when 'projects:issues:new','projects:issues:edit'
@@ -39,9 +43,15 @@ class Dispatcher
         shortcut_handler = new ShortcutsNavigation()
         new DropzoneInput($('.merge-request-form'))
         new IssuableForm($('.merge-request-form'))
+      when 'projects:tags:new'
+        new ZenMode()
+        new DropzoneInput($('.tag-form'))
+      when 'projects:releases:edit'
+        new ZenMode()
+        new DropzoneInput($('.release-form'))
       when 'projects:merge_requests:show'
         new Diff()
-        shortcut_handler = new ShortcutsIssuable()
+        shortcut_handler = new ShortcutsIssuable(true)
         new ZenMode()
       when "projects:merge_requests:diffs"
         new Diff()
@@ -50,11 +60,11 @@ class Dispatcher
         shortcut_handler = new ShortcutsNavigation()
         MergeRequests.init()
       when 'dashboard:show', 'root:show'
-        new Dashboard()
+        Dashboard.init()
+      when 'dashboard:activity'
         new Activities()
       when 'dashboard:projects:starred'
         new Activities()
-        new ProjectsList()
       when 'projects:commit:show'
         new Commit()
         new Diff()
@@ -69,18 +79,19 @@ class Dispatcher
       when 'groups:show'
         new Activities()
         shortcut_handler = new ShortcutsNavigation()
-        new ProjectsList()
       when 'groups:group_members:index'
         new GroupMembers()
         new UsersSelect()
       when 'projects:project_members:index'
         new ProjectMembers()
         new UsersSelect()
-      when 'groups:new', 'groups:edit', 'admin:groups:edit'
+      when 'groups:new', 'groups:edit', 'admin:groups:edit', 'admin:groups:new'
         new GroupAvatar()
       when 'projects:tree:show'
-        new TreeView()
         shortcut_handler = new ShortcutsNavigation()
+        new TreeView()
+      when 'projects:find_file:show'
+        shortcut_handler = true
       when 'projects:blob:show'
         new LineHighlighter()
         shortcut_handler = new ShortcutsNavigation()
@@ -92,11 +103,11 @@ class Dispatcher
         shortcut_handler = true
       when 'projects:forks:new'
         new ProjectFork()
+      when 'projects:artifacts:browse'
+        new BuildArtifacts()
       when 'users:show'
         new User()
         new Activities()
-      when 'admin:users:show'
-        new ProjectsList()
 
     switch path.first()
       when 'admin'

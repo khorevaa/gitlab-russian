@@ -3,14 +3,12 @@ class UsersController < ApplicationController
   before_action :set_user
 
   def show
-    @contributed_projects = contributed_projects.joined(@user).
-      reject(&:forked?)
+    @contributed_projects = contributed_projects.joined(@user).reject(&:forked?)
+    
+    @projects = PersonalProjectsFinder.new(@user).execute(current_user)
+    @projects = @projects.page(params[:page]).per(PER_PAGE)
 
-    @projects = @user.personal_projects.
-      where(id: authorized_projects_ids).includes(:namespace)
-
-    # Collect only groups common for both users
-    @groups = @user.groups & GroupsFinder.new.execute(current_user)
+    @groups = @user.groups.order_id_desc
 
     respond_to do |format|
       format.html
@@ -51,22 +49,10 @@ class UsersController < ApplicationController
 
   def set_user
     @user = User.find_by_username!(params[:username])
-
-    unless current_user || @user.public_profile?
-      return authenticate_user!
-    end
-  end
-
-  def authorized_projects_ids
-    # Projects user can view
-    @authorized_projects_ids ||=
-      ProjectsFinder.new.execute(current_user).pluck(:id)
   end
 
   def contributed_projects
-    @contributed_projects = Project.
-      where(id: authorized_projects_ids & @user.contributed_projects_ids).
-      includes(:namespace)
+    ContributedProjectsFinder.new(@user).execute(current_user)
   end
 
   def contributions_calendar
@@ -77,9 +63,13 @@ class UsersController < ApplicationController
   def load_events
     # Get user activity feed for projects common for both users
     @events = @user.recent_events.
-      where(project_id: authorized_projects_ids).
-      with_associations
+      merge(projects_for_current_user).
+      references(:project).
+      with_associations.
+      limit_recent(20, params[:offset])
+  end
 
-    @events = @events.limit(20).offset(params[:offset] || 0)
+  def projects_for_current_user
+    ProjectsFinder.new.execute(current_user)
   end
 end

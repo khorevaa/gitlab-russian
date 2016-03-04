@@ -5,18 +5,12 @@ class Import::GithubController < Import::BaseController
   rescue_from Octokit::Unauthorized, with: :github_unauthorized
 
   def callback
-    token = client.get_token(params[:code])
-    current_user.github_access_token = token
-    current_user.save
+    session[:github_access_token] = client.get_token(params[:code])
     redirect_to status_import_github_url
   end
 
   def status
     @repos = client.repos
-    client.orgs.each do |org|
-      @repos += client.org_repos(org.login)
-    end
-
     @already_added_projects = current_user.created_projects.where(import_type: "github")
     already_added_projects_names = @already_added_projects.pluck(:import_source)
 
@@ -39,21 +33,21 @@ class Import::GithubController < Import::BaseController
 
     namespace = get_or_create_namespace || (render and return)
 
-    @project = Gitlab::GithubImport::ProjectCreator.new(repo, namespace, current_user).execute
+    @project = Gitlab::GithubImport::ProjectCreator.new(repo, namespace, current_user, access_params).execute
   end
 
   private
 
   def client
-    @client ||= Gitlab::GithubImport::Client.new(current_user.github_access_token)
+    @client ||= Gitlab::GithubImport::Client.new(session[:github_access_token])
   end
 
   def verify_github_import_enabled
-    not_found! unless github_import_enabled?
+    render_404 unless github_import_enabled?
   end
 
   def github_auth
-    if current_user.github_access_token.blank?
+    if session[:github_access_token].blank?
       go_to_github_for_permissions
     end
   end
@@ -64,5 +58,11 @@ class Import::GithubController < Import::BaseController
 
   def github_unauthorized
     go_to_github_for_permissions
+  end
+
+  private
+
+  def access_params
+    { github_access_token: session[:github_access_token] }
   end
 end

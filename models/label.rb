@@ -2,16 +2,23 @@
 #
 # Table name: labels
 #
-#  id         :integer          not null, primary key
-#  title      :string(255)
-#  color      :string(255)
-#  project_id :integer
-#  created_at :datetime
-#  updated_at :datetime
+#  id           :integer          not null, primary key
+#  title        :string(255)
+#  color        :string(255)
+#  project_id   :integer
+#  created_at   :datetime
+#  updated_at   :datetime
+#  template     :boolean          default(FALSE)
+#  description  :string(255)
 #
 
 class Label < ActiveRecord::Base
   include Referable
+  # Represents a "No Label" state used for filtering Issues and Merge
+  # Requests that have no label assigned.
+  LabelStruct = Struct.new(:title, :name)
+  None = LabelStruct.new('No Label', 'No Label')
+  Any = LabelStruct.new('Any Label', '')
 
   DEFAULT_COLOR = '#428BCA'
 
@@ -21,10 +28,8 @@ class Label < ActiveRecord::Base
   has_many :label_links, dependent: :destroy
   has_many :issues, through: :label_links, source: :target, source_type: 'Issue'
 
-  validates :color,
-            format: { with: /\A#[0-9A-Fa-f]{6}\Z/ },
-            allow_blank: false
-  validates :project, presence: true
+  validates :color, color: true, allow_blank: false
+  validates :project, presence: true, unless: Proc.new { |service| service.template? }
 
   # Don't allow '?', '&', and ',' for label titles
   validates :title,
@@ -33,6 +38,8 @@ class Label < ActiveRecord::Base
             uniqueness: { scope: :project_id }
 
   default_scope { order(title: :asc) }
+
+  scope :templates, ->  { where(template: true) }
 
   alias_attribute :name, :title
 
@@ -77,5 +84,13 @@ class Label < ActiveRecord::Base
 
   def open_issues_count
     issues.opened.count
+  end
+
+  def closed_issues_count
+    issues.closed.count
+  end
+
+  def template?
+    template
   end
 end

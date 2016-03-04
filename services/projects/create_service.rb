@@ -64,8 +64,10 @@ module Projects
       after_create_actions if @project.persisted?
 
       @project
-    rescue => ex
-      @project.errors.add(:base, "Can't save project. Please try again later")
+    rescue => e
+      message = "Unable to save project: #{e.message}"
+      Rails.logger.error(message)
+      @project.errors.add(:base, message) if @project
       @project
     end
 
@@ -87,6 +89,8 @@ module Projects
 
       @project.build_missing_services
 
+      @project.create_labels
+
       event_service.create_project(@project, current_user)
       system_hook_service.execute_hooks_for(@project, :create)
 
@@ -94,11 +98,7 @@ module Projects
         @project.team << [current_user, :master, current_user]
       end
 
-      @project.update_column(:last_activity_at, @project.created_at)
-
-      if @project.import?
-        @project.import_start
-      end
+      @project.import_start if @project.import?
     end
   end
 end

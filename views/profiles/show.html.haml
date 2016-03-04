@@ -1,14 +1,9 @@
-- page_title "Профиль"
-%h3.page-title
-  = page_title
-%p.light
+.alert.alert-help.prepend-top-default
   Эта информация будет отображаться в вашем профиле.
   - if current_user.ldap_user?
     Некоторые параметры недоступны для учетных записей LDAP
-%hr
 
-
-
+.prepend-top-default
 = form_for @user, url: profile_path, method: :put, html: { multipart: true, class: "edit_user form-horizontal" }, authenticity_token: true do |f|
   -if @user.errors.any?
     %div.alert.alert-danger
@@ -26,7 +21,7 @@
       .form-group
         = f.label :email, class: "control-label"
         .col-sm-10
-          - if @user.ldap_user?
+          - if @user.ldap_user? && @user.ldap_email?
             = f.text_field :email, class: "form-control", required: true, readonly: true
             %span.help-block.light
               Электронный адрес доступен только для просмотра пользователям LDAP
@@ -48,7 +43,7 @@
       .form-group
         = f.label :public_email, class: "control-label"
         .col-sm-10
-          = f.select :public_email, options_for_select(@user.all_emails, selected: @user.public_email), {include_blank: 'Не показывать в профиле'}, class: "form-control"
+          = f.select :public_email, options_for_select(@user.all_emails, selected: @user.public_email), {include_blank: 'Не показывать в профиле'}, class: "select2"
           %span.help-block Этот электронный адрес будет отображаться в вашем профиле.
       .form-group
         = f.label :skype, class: "control-label"
@@ -60,10 +55,10 @@
         = f.label :twitter, class: "control-label"
         .col-sm-10= f.text_field :twitter, class: "form-control"
       .form-group
-        = f.label :website_url, 'Website', class: "control-label"
+        = f.label :website_url, 'Вебсайт', class: "control-label"
         .col-sm-10= f.text_field :website_url, class: "form-control"
       .form-group
-        = f.label :location, 'Location', class: "control-label"
+        = f.label :location, 'Местоположение', class: "control-label"
         .col-sm-10= f.text_field :location, class: "form-control"
       .form-group
         = f.label :bio, class: "control-label"
@@ -73,7 +68,7 @@
 
     .col-md-5
       .light-well
-        = image_tag avatar_icon(@user.email, 160), alt: '', class: 'avatar s160'
+        = image_tag avatar_icon(@user, 160), alt: '', class: 'avatar s160'
 
         .clearfix
           .profile-avatar-form-option
@@ -100,14 +95,7 @@
               %hr
               = link_to 'Удалить аватар', profile_avatar_path, data: { confirm: "Аватар, будет удален. Вы уверены?"}, method: :delete, class: "btn btn-remove btn-sm remove-avatar"
 
-      - if @user.public_profile?
-        .alert.alert-info
-          %h4 Публичный профиль
-          %p Ваш профиль публичен, потому что вы присоединились к общему проекту(ам)
 
-
-  .row
-    .col-md-7
-      .form-group
-        .col-sm-offset-2.col-sm-10
-          = f.submit 'Сохранить изменения', class: "btn btn-success"
+  .form-actions
+    = f.submit 'Сохранить изменения', class: "btn btn-success"
+    = link_to "Отмена", user_path(current_user), class: "btn btn-cancel"

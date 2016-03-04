@@ -1,6 +1,9 @@
 class SnippetsController < ApplicationController
   before_action :snippet, only: [:show, :edit, :destroy, :update, :raw]
 
+  # Allow read snippet
+  before_action :authorize_read_snippet!, only: [:show, :raw]
+
   # Allow modify snippet
   before_action :authorize_update_snippet!, only: [:edit, :update]
 
@@ -24,13 +27,9 @@ class SnippetsController < ApplicationController
         scope: params[:scope] }).
       page(params[:page]).per(PER_PAGE)
 
-      if @user == current_user
-        render 'current_user_index'
-      else
-        render 'user_index'
-      end
+      render 'index'
     else
-      @snippets = SnippetsFinder.new.execute(current_user, filter: :all).page(params[:page]).per(PER_PAGE)
+      redirect_to(current_user ? dashboard_snippets_path : explore_snippets_path)
     end
   end
 
@@ -83,8 +82,12 @@ class SnippetsController < ApplicationController
                      [Snippet::PUBLIC, Snippet::INTERNAL]).
                      find(params[:id])
                  else
-                   PersonalSnippet.are_public.find(params[:id])
+                   PersonalSnippet.find(params[:id])
                  end
+  end
+
+  def authorize_read_snippet!
+    authenticate_user! unless can?(current_user, :read_personal_snippet, @snippet)
   end
 
   def authorize_update_snippet!

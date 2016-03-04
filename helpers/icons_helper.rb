@@ -7,7 +7,7 @@ module IconsHelper
   # font-awesome-rails gem, but should we ever use a different icon pack in the
   # future we won't have to change hundreds of method calls.
   def icon(names, options = {})
-    fa_icon(names, options)
+    options.include?(:base) ? fa_stacked_icon(names, options) : fa_icon(names, options)
   end
 
   def spinner(text = nil, visible = false)
@@ -20,23 +20,27 @@ module IconsHelper
   end
 
   def boolean_to_icon(value)
-    if value.to_s == "true"
+    if value
       icon('circle', class: 'cgreen')
     else
       icon('power-off', class: 'clgray')
     end
   end
 
-  def public_icon
-    icon('globe fw')
-  end
+  def visibility_level_icon(level, fw: true)
+    name =
+      case level
+      when Gitlab::VisibilityLevel::PRIVATE
+        'lock'
+      when Gitlab::VisibilityLevel::INTERNAL
+        'shield'
+      else # Gitlab::VisibilityLevel::PUBLIC
+        'globe'
+      end
+      
+    name << " fw" if fw
 
-  def internal_icon
-    icon('shield fw')
-  end
-
-  def private_icon
-    icon('lock fw')
+    icon(name)
   end
 
   def file_type_icon_class(type, mode, name)

@@ -2,19 +2,20 @@
 #
 # Table name: issues
 #
-#  id           :integer          not null, primary key
-#  title        :string(255)
-#  assignee_id  :integer
-#  author_id    :integer
-#  project_id   :integer
-#  created_at   :datetime
-#  updated_at   :datetime
-#  position     :integer          default(0)
-#  branch_name  :string(255)
-#  description  :text
-#  milestone_id :integer
-#  state        :string(255)
-#  iid          :integer
+#  id            :integer          not null, primary key
+#  title         :string(255)
+#  assignee_id   :integer
+#  author_id     :integer
+#  project_id    :integer
+#  created_at    :datetime
+#  updated_at    :datetime
+#  position      :integer          default(0)
+#  branch_name   :string(255)
+#  description   :text
+#  milestone_id  :integer
+#  state         :string(255)
+#  iid           :integer
+#  updated_by_id :integer
 #
 
 require 'carrierwave/orm/activerecord'
@@ -32,9 +33,12 @@ class Issue < ActiveRecord::Base
   belongs_to :project
   validates :project, presence: true
 
-  scope :of_group, ->(group) { where(project_id: group.project_ids) }
+  scope :of_group,
+    ->(group) { where(project_id: group.projects.select(:id).reorder(nil)) }
+
   scope :cared, ->(user) { where(assignee_id: user) }
   scope :open_for, ->(user) { opened.assigned_to(user) }
+  scope :in_projects, ->(project_ids) { where(project_id: project_ids) }
 
   state_machine :state, initial: :opened do
     event :close do
@@ -68,6 +72,10 @@ class Issue < ActiveRecord::Base
     }x
   end
 
+  def self.link_reference_pattern
+    super("issues", /(?<issue>\d+)/)
+  end
+
   def to_reference(from_project = nil)
     reference = "#{self.class.reference_prefix}#{iid}"
 
@@ -76,6 +84,14 @@ class Issue < ActiveRecord::Base
     end
 
     reference
+  end
+
+  def referenced_merge_requests(current_user = nil)
+    Gitlab::ReferenceExtractor.lazily do
+      [self, *notes].flat_map do |note|
+        note.all_references(current_user).merge_requests
+      end
+    end.sort_by(&:iid)
   end
 
   # Reset issue events cache
@@ -93,5 +109,15 @@ class Issue < ActiveRecord::Base
   # To allow polymorphism with MergeRequest.
   def source_project
     project
+  end
+
+  # From all notes on this issue, we'll select the system notes about linked
+  # merge requests. Of those, the MRs closing `self` are returned.
+  def closed_by_merge_requests(current_user = nil)
+    return [] unless open?
+
+    notes.system.flat_map do |note|
+      note.all_references(current_user).merge_requests
+    end.uniq.select { |mr| mr.open? && mr.closes_issue?(self) }
   end
 end

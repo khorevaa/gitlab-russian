@@ -1,38 +1,56 @@
 %ul.nav.nav-sidebar
-  = nav_link(path: ['dashboard#show', 'root#show'], html_options: {class: 'home'}) do
-    = link_to dashboard_path, title: 'Домой', class: 'shortcuts-activity', data: {placement: 'right'} do
+  = nav_link(path: ['root#index', 'projects#trending', 'projects#starred', 'dashboard/projects#index'], html_options: {class: 'home'}) do
+    = link_to dashboard_projects_path, title: 'Проекты' do
+      = icon('home fw')
+      %span
+        Проекты
+  = nav_link(controller: :todos) do
+    = link_to dashboard_todos_path, title: 'Задачи' do
+      = icon('bell fw')
+      %span
+        Задачи
+        %span.count= number_with_delimiter(todos_pending_count)
+  = nav_link(path: 'dashboard#activity') do
+    = link_to activity_dashboard_path, class: 'shortcuts-activity', title: 'Activity' do
       = icon('dashboard fw')
       %span
-        Ваши проекты
-  = nav_link(path: 'projects#starred') do
-    = link_to starred_dashboard_projects_path, title: 'Избранные проекты', data: {placement: 'right'} do
-      = icon('star fw')
-      %span
-        Избранные проекты
+        Активность
   = nav_link(controller: :groups) do
-    = link_to dashboard_groups_path, title: 'Группы', data: {placement: 'right'} do
+    = link_to dashboard_groups_path, title: 'Groups' do
       = icon('group fw')
       %span
         Группы
   = nav_link(controller: :milestones) do
-    = link_to dashboard_milestones_path, title: 'Итерации', data: {placement: 'right'} do
+    = link_to dashboard_milestones_path, title: 'Итерации' do
       = icon('clock-o fw')
       %span
         Итерации
   = nav_link(path: 'dashboard#issues') do
-    = link_to assigned_issues_dashboard_path, title: 'Вопросы', class: 'shortcuts-issues', data: {placement: 'right'} do
+    = link_to assigned_issues_dashboard_path, title: 'Вопросы', class: 'shortcuts-issues' do
       = icon('exclamation-circle fw')
       %span
         Вопросы
-        %span.count= current_user.assigned_issues.opened.count
+        %span.count= number_with_delimiter(current_user.assigned_issues.opened.count)
   = nav_link(path: 'dashboard#merge_requests') do
-    = link_to assigned_mrs_dashboard_path, title: 'Запросы слияния', class: 'shortcuts-merge_requests', data: {placement: 'right'} do
+    = link_to assigned_mrs_dashboard_path, title: 'Запросы слияния', class: 'shortcuts-merge_requests' do
       = icon('tasks fw')
       %span
         Запросы слияния
-        %span.count= current_user.assigned_merge_requests.opened.count
+        %span.count= number_with_delimiter(current_user.assigned_merge_requests.opened.count)
+  = nav_link(controller: :snippets) do
+    = link_to dashboard_snippets_path, title: 'Фрагменты' do
+      = icon('clipboard fw')
+      %span
+        Фрагменты
   = nav_link(controller: :help) do
-    = link_to help_path, title: 'Помощь', data: {placement: 'right'} do
+    = link_to help_path, title: 'Помощь' do
       = icon('question-circle fw')
       %span
         Помощь
+
+  %li.separate-item
+  = nav_link(controller: :profile) do
+    = link_to profile_path, title: 'Настройки профиля', data: {placement: 'bottom'} do
+      = icon('user fw')
+      %span
+        Настройки профиля

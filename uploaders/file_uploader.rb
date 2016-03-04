@@ -1,5 +1,7 @@
 # encoding: utf-8
 class FileUploader < CarrierWave::Uploader::Base
+  include UploaderHelper
+
   storage :file
 
   attr_accessor :project, :secret
@@ -26,23 +28,21 @@ class FileUploader < CarrierWave::Uploader::Base
   end
 
   def secure_url
-    File.join(Gitlab.config.gitlab.url, @project.path_with_namespace, "uploads", @secret, file.filename)
+    File.join("/uploads", @secret, file.filename)
   end
 
-  def file_storage?
-    self.class.storage == CarrierWave::Storage::File
-  end
+  def to_h
+    filename = image? ? self.file.basename : self.file.filename
+    escaped_filename = filename.gsub("]", "\\]")
 
-  def image?
-    img_ext = %w(png jpg jpeg gif bmp tiff)
-    if file.respond_to?(:extension)
-      img_ext.include?(file.extension.downcase)
-    else
-      # Not all CarrierWave storages respond to :extension
-      ext = file.path.split('.').last.downcase
-      img_ext.include?(ext)
-    end
-  rescue
-    false
+    markdown = "[#{escaped_filename}](#{self.secure_url})"
+    markdown.prepend("!") if image?
+
+    {
+      alt:      filename,
+      url:      self.secure_url,
+      is_image: image?,
+      markdown: markdown
+    }
   end
 end

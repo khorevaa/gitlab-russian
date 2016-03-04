@@ -1,14 +1,19 @@
-- page_title "Merge Requests"
-%h3.page-title
-  Merge Requests
+- page_title "Запросы слияния"
+- header_title group_title(@group, "Запросы слияния", merge_requests_group_path(@group))
 
-%p.light
-  Only merge requests from
+.top-area
+  = render 'shared/issuable/nav', type: :merge_requests
+  .nav-controls
+    = render 'shared/new_project_item_select', path: 'merge_requests/new', label: "Новый запрос слияния"
+
+= render 'shared/issuable/filter', type: :merge_requests
+
+.gray-content-block.second-block
+  Запросить слияние только для
   %strong #{@group.name}
-  group are listed here.
+  групп перечисленых здесь.
   - if current_user
-    To see all merge requests you should visit #{link_to 'dashboard', merge_requests_dashboard_path} page.
-%hr
-.append-bottom-20
-  = render 'shared/issuable/filter', type: :merge_requests
-= render 'shared/merge_requests'
+    Чтобы увидеть все запросы слияния, посетите страницу #{link_to 'панели управления', merge_requests_dashboard_path}.
+
+.prepend-top-default
+  = render 'shared/merge_requests'

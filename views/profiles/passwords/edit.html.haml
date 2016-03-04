@@ -1,20 +1,20 @@
-- page_title "Password"
-%h3.page-title
-  = page_title
-%p.light
+- page_title "Пароль"
+- header_title page_title, edit_profile_password_path
+
+.alert.alert-help.prepend-top-default
   - if @user.password_automatically_set?
-    Set your password.
+    Введите свой пароль.
   - else
-    Change your password or recover your current one.
-%hr
-.update-password
+    Изменить свой пароль или восстановить текущий.
+
+.update-password.prepend-top-default
   = form_for @user, url: profile_password_path, method: :put, html: { class: 'form-horizontal' }  do |f|
     %div
       %p.slead
         - unless @user.password_automatically_set?
-          You must provide current password in order to change it.
+          Вы должны указать текущий пароль, чтобы изменить его.
           %br
-        After a successful password update, you will be redirected to the login page where you can log in with your new password.
+        После успешного изменения пароля, вы будете перенаправлены на страницу входа, где вы можете войти в систему с новым паролем.
       -if @user.errors.any?
         .alert.alert-danger
           %ul
@@ -26,10 +26,10 @@
           .col-sm-10
             = f.password_field :current_password, required: true, class: 'form-control'
             %div
-              = link_to "Forgot your password?", reset_profile_password_path, method: :put
+              = link_to "Забыли пароль?", reset_profile_password_path, method: :put
 
       .form-group
-        = f.label :password, 'New password', class: 'control-label'
+        = f.label :password, 'Новый пароль', class: 'control-label'
         .col-sm-10
           = f.password_field :password, required: true, class: 'form-control'
       .form-group
@@ -37,4 +37,4 @@
         .col-sm-10
           = f.password_field :password_confirmation, required: true, class: 'form-control'
       .form-actions
-        = f.submit 'Save password', class: "btn btn-create"
+        = f.submit 'Сохранить пароль', class: "btn btn-create"

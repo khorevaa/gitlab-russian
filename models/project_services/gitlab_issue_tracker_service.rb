@@ -16,16 +16,15 @@
 #  merge_requests_events :boolean          default(TRUE)
 #  tag_push_events       :boolean          default(TRUE)
 #  note_events           :boolean          default(TRUE), not null
+#  build_events          :boolean          default(FALSE), not null
 #
 
 class GitlabIssueTrackerService < IssueTrackerService
-  include Rails.application.routes.url_helpers
+  include Gitlab::Application.routes.url_helpers
 
   prop_accessor :title, :description, :project_url, :issues_url, :new_issue_url
 
-  def default?
-    true
-  end
+  default_value_for :default, true
 
   def to_param
     'gitlab'

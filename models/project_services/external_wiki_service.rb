@@ -16,16 +16,15 @@
 #  merge_requests_events :boolean          default(TRUE)
 #  tag_push_events       :boolean          default(TRUE)
 #  note_events           :boolean          default(TRUE), not null
+#  build_events          :boolean          default(FALSE), not null
 #
 
 class ExternalWikiService < Service
   include HTTParty
 
   prop_accessor :external_wiki_url
-  validates :external_wiki_url,
-            presence: true,
-            format: { with: /\A#{URI.regexp}\z/ },
-            if: :activated?
+
+  validates :external_wiki_url, presence: true, url: true, if: :activated?
 
   def title
     'External Wiki'
