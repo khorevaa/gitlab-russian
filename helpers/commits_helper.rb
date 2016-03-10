@@ -102,14 +102,14 @@ module CommitsHelper
     if current_controller?(:projects, :commits)
       if @repo.blob_at(commit.id, @path)
         return link_to(
-          "Browse File »",
+          "Просмотр файла »",
           namespace_project_blob_path(project.namespace, project,
                                       tree_join(commit.id, @path)),
           class: "pull-right"
         )
       elsif @path.present?
         return link_to(
-          "Browse Directory »",
+          "Просмотр директории »",
           namespace_project_tree_path(project.namespace, project,
                                       tree_join(commit.id, @path)),
           class: "pull-right"
@@ -117,7 +117,7 @@ module CommitsHelper
       end
     end
     link_to(
-      "Browse Files »",
+      "Просмотр файлов »",
       namespace_project_tree_path(project.namespace, project, commit),
       class: "pull-right"
     )
@@ -126,11 +126,11 @@ module CommitsHelper
   def revert_commit_link(commit, continue_to_path, btn_class: nil)
     return unless current_user
 
-    tooltip = "Revert this #{revert_commit_type(commit)} in a new merge request"
+    tooltip = "Вернуть этот #{revert_commit_type(commit)} в новый запрос слияния"
 
     if can_collaborate_with_project?
       content_tag :span, 'data-toggle' => 'modal', 'data-target' => '#modal-revert-commit' do
-        link_to 'Revert', '#modal-revert-commit', 'data-toggle' => 'tooltip', 'data-container' => 'body', title: tooltip, class: "btn btn-default btn-grouped btn-#{btn_class}"
+        link_to 'Вернуть', '#modal-revert-commit', 'data-toggle' => 'tooltip', 'data-container' => 'body', title: tooltip, class: "btn btn-default btn-grouped btn-#{btn_class}"
       end
     elsif can?(current_user, :fork_project, @project)
       continue_params = {
@@ -142,7 +142,7 @@ module CommitsHelper
         namespace_key: current_user.namespace.id,
         continue: continue_params)
 
-      link_to 'Revert', fork_path, class: 'btn btn-grouped btn-close', method: :post, 'data-toggle' => 'tooltip', 'data-container' => 'body', title: tooltip
+      link_to 'Вернуть', fork_path, class: 'btn btn-grouped btn-close', method: :post, 'data-toggle' => 'tooltip', 'data-container' => 'body', title: tooltip
     end
   end
 
@@ -199,7 +199,7 @@ module CommitsHelper
                                   tree_join(commit_sha, diff.new_path)),
       class: 'btn view-file js-view-file'
     ) do
-      raw('View file @') + content_tag(:span, commit_sha[0..6],
+      raw('Просмотр файла @') + content_tag(:span, commit_sha[0..6],
                                        class: 'commit-short-id')
     end
   end

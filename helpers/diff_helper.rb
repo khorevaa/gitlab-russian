@@ -87,11 +87,11 @@ module DiffHelper
   end
 
   def inline_diff_btn
-    diff_btn('Inline', 'inline', diff_view == 'inline')
+    diff_btn('Внутри', 'inline', diff_view == 'inline')
   end
 
   def parallel_diff_btn
-    diff_btn('Side-by-side', 'parallel', diff_view == 'parallel')
+    diff_btn('Бок о бок', 'parallel', diff_view == 'parallel')
   end
 
   def submodule_link(blob, ref, repository = @repository)

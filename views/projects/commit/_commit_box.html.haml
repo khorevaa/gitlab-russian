@@ -7,32 +7,32 @@
     .pull-left.btn-group
       %a.btn.btn-grouped.dropdown-toggle{ data: {toggle: :dropdown} }
         %i.fa.fa-download
-        Download as
+        Загрузить как
         %span.caret
       %ul.dropdown-menu
         - unless @commit.parents.length > 1
-          %li= link_to "Email Patches", namespace_project_commit_path(@project.namespace, @project, @commit, format: :patch)
-        %li= link_to "Plain Diff",    namespace_project_commit_path(@project.namespace, @project, @commit, format: :diff)
+          %li= link_to "Email патч", namespace_project_commit_path(@project.namespace, @project, @commit, format: :patch)
+        %li= link_to "Обычный дифф",    namespace_project_commit_path(@project.namespace, @project, @commit, format: :diff)
     = link_to namespace_project_tree_path(@project.namespace, @project, @commit), class: "btn btn-grouped" do
       = icon('files-o')
-      Browse Files
+      Обзор файлов
     - unless @commit.has_been_reverted?(current_user)
       = revert_commit_link(@commit, namespace_project_commit_path(@project.namespace, @project, @commit.id))
   %div
 
 %p
-  %span.light Commit
+  %span.light Коммит
   = link_to @commit.id, namespace_project_commit_path(@project.namespace, @project, @commit), class: "monospace"
   = clipboard_button(clipboard_text: @commit.id)
 .commit-info-row
-  %span.light Authored by
+  %span.light Авторство
   %strong
     = commit_author_link(@commit, avatar: true, size: 24)
   #{time_ago_with_tooltip(@commit.authored_date)}
 
 - if @commit.different_committer?
   .commit-info-row
-    %span.light Committed by
+    %span.light Закоммитил
     %strong
       = commit_committer_link(@commit, avatar: true, size: 24)
     #{time_ago_with_tooltip(@commit.committed_date)}
