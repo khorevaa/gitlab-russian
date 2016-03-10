@@ -1,11 +1,11 @@
-- page_title "Preview | Appearance"
+- page_title "Предпросмотр | Внешний вид"
 %h3.page-title
-  Appearance settings - Preview
+  Настройка внешнего вида - Предпросмотр
 %hr
 
 .ui-box
   .title
-    Sign-in page
+    Страница входа
   %div
     .login-page
       .container
@@ -23,7 +23,7 @@
                 = brand_text
             .col-sm-4
               .login-box
-                %h3.page-title Sign in
-                = text_field_tag :login, nil, class: "form-control top", placeholder: "Username or Email"
-                = password_field_tag :password, nil, class: "form-control bottom", placeholder: "Password"
-                = button_tag "Sign in", class: "btn-create btn"
+                %h3.page-title Войти
+                = text_field_tag :login, nil, class: "form-control top", placeholder: "Имя аккаунта или Email"
+                = password_field_tag :password, nil, class: "form-control bottom", placeholder: "Пароль"
+                = button_tag "Вход", class: "btn-create btn"

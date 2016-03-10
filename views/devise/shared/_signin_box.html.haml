@@ -1,10 +1,10 @@
 .login-box
   - if signup_enabled?
     .login-heading
-      %h3 Existing user? Sign in
+      %h3 Уже есть аккаунт? Войти
   - else
     .login-heading
-      %h3 Sign in
+      %h3 Вход
   .login-body
     - if form_based_providers.any?
       %ul.nav-links
